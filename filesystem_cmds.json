@@ -1,0 +1,14 @@
+[
+  "edit:null:Open a text file for editing. The first parameter is the name of the file to edit.",
+  "ls:null:List all items in the given directories. If none is given, lists the current directory.",
+  "cd:boolean:Change the current directory. Returns true on success, false on failure.",
+  "run:boolean:Runs a Paisley or Lua script from a file. Returns true if the file exists and runs successfully, false otherwise.",
+  "read:string|null:Reads the contents of a file. If the file does not exist, null is returned.",
+  "cat:null:Prints the contents of a file.",
+  "mkdir:boolean:Create a directory. Returns true if successful, false otherwise.",
+  "mkfile:boolean:Create a file with contents. Returns true if successful, false otherwise.",
+  "dir:string:Gets the current working directory.",
+  "pwd:null:Prints the current working directory.",
+  "touch:boolean:Create an empty file. Returns true if successful, false otherwise.",
+  "rm:boolean:Delete the given files or directories. Returns true if successful, false otherwise."
+]
