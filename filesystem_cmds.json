@@ -1,5 +1,5 @@
 [
-  "edit:null:Open a text file for editing. The first parameter is the name of the file to edit.",
+  "edit:null:Open a text file for editing. The first parameter is the name of the file to edit.\nF1 clears the current line.\nF2 deletes the current line.\nF3 copies the current line.\nF4 pastes the last copied line.\nF6 saves the file, F8 cancels.",
   "ls:null:List all items in the given directories. If none is given, lists the current directory.",
   "cd:boolean:Change the current directory. Returns true on success, false on failure.",
   "run:boolean:Runs a Paisley or Lua script from a file. Returns true if the file exists and runs successfully, false otherwise.",

@@ -9,7 +9,34 @@ FILESYSTEM = {
     type = FS.dir,
     contents = {},
 }
-WORKING_DIR = '/'
+
+local function mkfs(path_names)
+    local fs_item = FILESYSTEM
+    for i = 1, #path_names do
+        local name = path_names[i]
+        local new_fs_item = {
+            name = name,
+            parent = fs_item,
+            type = FS.dir,
+            contents = {},
+        }
+        fs_item.contents[name] = new_fs_item
+        fs_item = new_fs_item
+    end
+end
+
+mkfs({'home'})
+mkfs({'etc'})
+mkfs({'bin'})
+WORKING_DIR = '/home'
+
+--Create a readme for users to view
+FILESYSTEM.contents.home.contents.README = {
+    name = 'README',
+    parent = FILESYSTEM.contents.home,
+    type = FS.file,
+    contents = "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\n\n/bin: User scripts can be stored here.\n/etc: Config files can be stored here.\n/home: Everything else can be stored here.",
+}
 
 local function color(text, text_color) return '<color='..text_color..'>'..text..'<'..'/color>' end
 
