@@ -11,5 +11,13 @@
   "pwd:null:Prints the current working directory.",
   "touch:boolean:Create an empty file. Returns true if successful, false otherwise.",
   "rm:boolean:Delete the given files or directories. Returns true if successful, false otherwise.",
-  "play:null:Plays a sound from the Plasma sound library. The sound EMPTY will stop playback."
+  "play:null:Plays a sound from the Plasma sound library. The sound EMPTY will stop playback.",
+  "exists:boolean:Checks whether a file path exists.",
+  "isfile:boolean:Checks whether a file path exists and is a file.",
+  "isdir:boolean:Checks whether a file path exists and is a directory.",
+  "mv:boolean:Move a file or directory from one location to another. Returns true on success, false otherwise.",
+  "cp:boolean:Copy a file or directory from one location to another. Returns true on success, false otherwise.",
+  "*:array[string]:List all files and directories in the given directory, or current dir if not specified.",
+  "*file:array[string]:List all files in the given directory, or current dir if not specified.",
+  "*dir:array[string]:List all directories in the given directory, or current dir if not specified."
 ]

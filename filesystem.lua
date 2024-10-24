@@ -919,3 +919,75 @@ function RUN()
     output(true, 1)
     output(fs_item.contents, 4)
 end
+
+function MV()
+    ---@diagnostic disable-next-line
+    local path_list = V1
+
+    --Check if destination exists
+    if #path_list < 2 then
+        file_error('No destination specified.')
+        output(false, 1)
+        return
+    end
+
+    local destination = nil
+    if #path_list > 2 then
+        destination = get_fs_item(path_list[#path_list])
+    else
+        destination = get_fs_item(path_list[#path_list], false, true)
+        if not destination then
+            destination = get_fs_item(path_list[#path_list], true)
+        end
+    end
+    if not destination then
+        output(false, 1)
+        return
+    end
+    if destination.type == FS.file then
+        file_error('Destination exists but is not a directory.')
+        output(false, 1)
+        return
+    end
+
+    --Check if source(s) exist and can be moved to the destination without overwriting data.
+    for i = 1, #path_list - 1 do
+        local fs_item = get_fs_item(path_list[i])
+        if not fs_item then
+            output(false, 1)
+            return
+        end
+
+        if destination.contents[fs_item.name] and destination.contents[fs_item.name].type == FS.dir then
+            file_error('Cannot overwrite directory `'..path_list[#path_list]..'/'..fs_item.name..'`.')
+            output(false, 1)
+            return
+        end
+
+        if get_fs_full_path(destination):match(get_fs_full_path(fs_item)) then
+            file_error('Cannot move `'..get_fs_full_path(fs_item)..'` into its own subdirectory `'..get_fs_full_path(destination)..'`.')
+            output(false, 1)
+            return
+        end
+
+        if not fs_item.parent then
+            file_error('Cannot move filesystem root.')
+            output(false, 1)
+            return
+        end
+    end
+
+    for i = 1, #path_list - 1 do
+        --We've already checked that the file exists above,
+        --But if there was some weird nesting, one or more could cease to exist partway through moving.
+        --Just ignore that, as it means we did successfully move all the data over.
+        local fs_item = get_fs_item(path_list[i], false, true)
+        if fs_item then
+            fs_item.parent = destination
+            destination.contents[fs_item.name] = fs_item
+            fs_item.parent.contents[fs_item.name] = nil
+        end
+    end
+
+    output(true, 1)
+end
