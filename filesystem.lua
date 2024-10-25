@@ -991,3 +991,46 @@ function MV()
 
     output(true, 1)
 end
+
+function EXISTS()
+    ---@diagnostic disable-next-line
+    local path_list = V1
+    for i = 1, #path_list do
+        local fs_item = get_fs_item(path_list[i], false, true)
+        if not fs_item then
+            output(false, 1)
+            return
+        end
+    end
+    output(true, 1)
+end
+
+function ISFILE()
+    ---@diagnostic disable-next-line
+    local path_list = V1
+    for i = 1, #path_list do
+        local fs_item = get_fs_item(path_list[i], false, true)
+        if not fs_item or fs_item.type == FS.dir then
+            output(false, 1)
+            return
+        end
+    end
+    output(true, 1)
+end
+
+function ISDIR()
+    ---@diagnostic disable-next-line
+    local path_list = V1
+    for i = 1, #path_list do
+        local fs_item = get_fs_item(path_list[i], false, true)
+        if not fs_item or fs_item.type == FS.file then
+            output(false, 1)
+            return
+        end
+    end
+    output(true, 1)
+end
+
+function STAR()
+    ---???
+end
