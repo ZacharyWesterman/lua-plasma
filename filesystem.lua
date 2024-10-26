@@ -38,6 +38,26 @@ local function mkfs(path_names, filename, file_contents)
 end
 
 --Make built-in syntax highlighting files.
+mkfs({'etc', 'syntax'}, 'theme.lua', [[
+--Color scheme used to highlight syntax.
+theme = {
+    variable = {"color", "#d0e0ff"},
+    special_var = {{"color", "#d0e0ff"}, {"i"}},
+    escape = {"color", "#e2c868"},
+    literal = {"color", "#2580da"},
+    string = {"color", "#ddb13f"},
+    keyword = {"color", "#9654ab"},
+    operator = {"color", "#6c9dc3"},
+    number = {"color", "#d6b129"},
+    punctuation = {"color", "#aaaaaa"},
+    object = {"color", "#3ac5c2"},
+    functions = {"color", "#e2c868"},
+    special_functions = {"color", "#6c9dc3"},
+    noformat = {"color", "white"},
+    comment = {"color", "#777"},
+}
+]])
+
 mkfs({'etc', 'syntax', 'paisley'}, 'files.txt', '.p$\n.pai$\n.paisley$')
 mkfs({'etc', 'syntax', 'paisley'}, 'patterns.lua', [[
 patterns = {
@@ -328,25 +348,7 @@ scopes = {
     },
 }
 ]])
-mkfs({'etc', 'syntax'}, 'theme.lua', [[
---Color scheme used to highlight syntax.
-theme = {
-    variable = {"color", "#d0e0ff"},
-    special_var = {{"color", "#d0e0ff"}, {"i"}},
-    escape = {"color", "#e2c868"},
-    literal = {"color", "#2580da"},
-    string = {"color", "#ddb13f"},
-    keyword = {"color", "#9654ab"},
-    operator = {"color", "#6c9dc3"},
-    number = {"color", "#d6b129"},
-    punctuation = {"color", "#aaaaaa"},
-    object = {"color", "#3ac5c2"},
-    functions = {"color", "#e2c868"},
-    special_functions = {"color", "#6c9dc3"},
-    noformat = {"color", "white"},
-    comment = {"color", "#777"},
-}
-]])
+
 mkfs({'etc', 'syntax', 'lua'}, 'files.txt', '.lua$')
 mkfs({'etc', 'syntax', 'lua'}, 'patterns.lua', [[
 patterns = {
@@ -458,6 +460,64 @@ scopes = {
     },
 }
 ]])
+
+mkfs({'etc', 'syntax', 'json'}, 'files.txt', '.json$')
+mkfs({'etc', 'syntax', 'json'}, 'patterns.lua', [[
+patterns = {
+    escape_char = {
+        pattern = {"\\u....", "\\."},
+        display = "escape",
+        greedy = true,
+    },
+
+    literal = {
+        pattern = {"true", "false", "nil"},
+        display = "literal",
+    },
+
+    number = {
+        pattern = "%d[%d_%.]*",
+        display = "number",
+    },
+
+    punctuation = {
+        pattern = "[%[%]%{%}:,]",
+        display = "punctuation",
+    },
+
+    string_start = {
+        pattern = "\"", --"
+        display = "string",
+        push = "string", --push this scope onto the stack, overriding global until it is popped off.
+    },
+
+    string_end = {
+        pattern = "\"", --"
+        pop = true, --pop this scope off the stack. afterwards (if there are no more scopes) revert to global scope.
+    },
+}
+]])
+mkfs({'etc', 'syntax', 'json'}, 'scopes.lua', [[
+--Each "scope" has a list of patterns that will be highlighted.
+scopes = {
+    --This is a special scope that is the FIRST one visible when scope stack is empty
+    --This global scope is visible IN ADDITION TO the current scope.
+    global = {},
+
+    initial = {
+        "punctuation",
+        "string_start",
+        "number",
+        "literal"
+    },
+
+    string = {
+        "escape_char",
+        "string_end"
+    }
+}
+]])
+
 mkfs({'bin'})
 mkfs({'home'}, 'README', "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\n\n/bin: User scripts can be stored here.\n/etc: Config files can be stored here.\n/home: Everything else can be stored here.")
 WORKING_DIR = '/home'
