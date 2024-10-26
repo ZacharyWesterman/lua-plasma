@@ -530,6 +530,45 @@ local function get_fs_basename(path)
     return basename
 end
 
+local function fs_deep_copy(parent_node, child_node)
+    local result = {
+        name = child_node.name,
+        parent = parent_node,
+        type = child_node.type,
+    }
+
+    if child_node.type == FS.file then
+        result.contents = child_node.contents
+    else
+        result.contents = {}
+        for key, value in pairs(child_node.contents) do
+            result.contents[key] = fs_deep_copy(result, value)
+        end
+    end
+
+    return result
+end
+
+local function command_return(value)
+    if type(value) == 'table' then
+        if #value == 0 then
+            ---@diagnostic disable-next-line
+            output(nil, 4)
+        else
+            ---@diagnostic disable-next-line
+            output_array(value, 1)
+        end
+    else
+        ---@diagnostic disable-next-line
+        output(value, 1)
+    end
+end
+
+local function run_paisley_script(script)
+    ---@diagnostic disable-next-line
+    output(script, 3)
+end
+
 
 function LS()
     ---@diagnostic disable-next-line
@@ -540,7 +579,7 @@ function LS()
         local fs_item = get_fs_item(path_list[i])
         if not fs_item then break end
 
-        if fs_item.type == FS.file then
+        if fs_item.type ~= FS.dir then
             file_error('`'..path_list[i]..'` is not a directory.')
             break
         end
@@ -558,13 +597,15 @@ function LS()
         for name, item in pairs(fs_item.contents) do
             if item.type == FS.dir then
                 print(color(name, 'blue'))
-            else
+            elseif item.type == FS.file then
                 print(name)
+            else
+                print(color(name, 'red'))
             end
         end
     end
 
-    output(nil, 1)
+    command_return(nil)
 end
 
 function MKDIR()
@@ -572,19 +613,19 @@ function MKDIR()
     local path_list = V1
     if #path_list == 0 then
         file_error('No directories given to create.')
-        output(false, 1)
+        command_return(false)
     end
 
     for i = 1, #path_list do
         local fs_item = get_fs_item(path_list[i], true)
         if not fs_item then
-            output(false, 1)
+            command_return(false)
             return
         end
 
         if fs_item.type == FS.file then
             file_error('`'..path_list[i]..'` is not a directory.')
-            output(false, 1)
+            command_return(false)
             return
         end
 
@@ -598,7 +639,7 @@ function MKDIR()
 
         if not create_name or fs_item.contents[create_name] then
             file_error('`'..path_list[i]..'` already exists.')
-            output(false, 1)
+            command_return(false)
             return
         end
 
@@ -610,7 +651,7 @@ function MKDIR()
         }
     end
 
-    output(true, 1)
+    command_return(true)
 end
 
 function TOUCH()
@@ -618,26 +659,27 @@ function TOUCH()
     local path_list = V1
     if #path_list == 0 then
         file_error('No files given to create.')
-        output(false, 1)
+        command_return(false)
+        return
     end
 
     for i = 1, #path_list do
         local fs_item = get_fs_item(path_list[i], true)
         if not fs_item then
-            output(false, 1)
+            command_return(false)
             return
         end
 
         if fs_item.type == FS.file then
             file_error('`'..path_list[i]..'` is not a directory.')
-            output(false, 1)
+            command_return(false)
             return
         end
 
         local create_name = get_fs_basename(path_list[i])
         if not create_name or (fs_item.contents[create_name] and fs_item.contents[create_name].type == FS.dir) then
             file_error('`'..path_list[i]..'` already exists.')
-            output(false, 1)
+            command_return(false)
             return
         end
 
@@ -649,7 +691,7 @@ function TOUCH()
         }
     end
 
-    output(true, 1)
+    command_return(true)
 end
 
 function MKFILE()
@@ -657,25 +699,25 @@ function MKFILE()
     local path_list = V1
     if #path_list ~= 2 then
         file_error('Expected exactly 2 params (filename and contents), but got '..#path_list..'.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
     local fs_dir = get_fs_item(path_list[1], true)
     if not fs_dir then
-        output(false, 1)
+        command_return(false)
         return
     end
     if fs_dir.type == FS.file then
         file_error('`'..path_list[i]..'` is not a directory.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
     local create_name = get_fs_basename(path_list[1])
     if not create_name or (fs_dir.contents[create_name] and fs_dir.contents[create_name].type == FS.dir) then
         file_error('`'..path_list[1]..'` already exists.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
@@ -686,7 +728,7 @@ function MKFILE()
         contents = path_list[2],
     }
 
-    output(true, 1)
+    command_return(true)
 end
 
 function CD()
@@ -694,27 +736,27 @@ function CD()
     local path_list = V1
     if #path_list ~= 1 then
         file_error('Expected exactly 1 argument, got '..#path_list)
-        output(false, 1)
+        command_return(false)
         return
     end
 
     local fs_item = get_fs_item(path_list[1])
     if not fs_item or fs_item.type == FS.file then
-        output(false, 1)
+        command_return(false)
         return
     end
 
     WORKING_DIR = get_fs_full_path(fs_item)
-    output(true, 1)
+    command_return(true)
 end
 
 function DIR()
-    output(WORKING_DIR, 1)
+    command_return(WORKING_DIR)
 end
 
 function PWD()
     print(WORKING_DIR)
-    output(nil, 1)
+    command_return(nil)
 end
 
 function READ()
@@ -722,21 +764,21 @@ function READ()
     local path_list = V1
     if #path_list ~= 1 then
         file_error('Expected exactly 1 argument, got '..#path_list)
-        output(nil, 1)
+        command_return(nil)
         return
     end
 
     local fs_item = get_fs_item(path_list[1])
     if not fs_item or fs_item.type == FS.dir then
-        output(nil, 1)
+        command_return(nil)
         return
     end
 
-    output(fs_item.contents, 1)
+    command_return(fs_item.contents)
 end
 
 function CAT()
-    output(nil, 1)
+    command_return(nil)
 
     ---@diagnostic disable-next-line
     local path_list = V1
@@ -765,32 +807,35 @@ function EDIT()
     local path_list = V1
     if #path_list ~= 1 then
         file_error('Expected exactly 1 argument, got '..#path_list)
-        output(false, 1)
+        command_return(false)
         return
     end
 
     local fs_item = get_fs_item(path_list[1], true)
     if not fs_item then
-        output(false, 1)
+        command_return(false)
         return
     end
 
     if fs_item.type == FS.file then
         file_error('`'..get_fs_full_path(fs_item)..'` is not a directory.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
+    local create_fs_item = get_fs_item(path_list[1], false, true)
     local create_name = get_fs_basename(path_list[1])
-    if not create_name or (fs_item.contents[create_name] and fs_item.contents[create_name].type == FS.dir) then
+    if not create_name or (create_fs_item and create_fs_item.type == FS.dir) then
         file_error('Cannot overwrite directory `'..path_list[1]..'`.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
     local contents = '' --Actually want to differentiate between "empty file" and "nonexistent file"?
-    if fs_item.contents[create_name] then
-        contents = fs_item.contents[create_name].contents
+    if create_fs_item then
+        ---@diagnostic disable-next-line
+        contents = create_fs_item.contents
+        create_name = create_fs_item.name
     end
 
     EDIT_PATH = {
@@ -841,6 +886,7 @@ function EDIT()
         syntax_theme,
         syntax_scope,
         syntax_pattern,
+        ---@diagnostic disable-next-line
     }, 2)
 end
 
@@ -849,7 +895,7 @@ function EDIT_RETURN()
     local contents = V2
 
     if not contents then
-        output(false, 1)
+        command_return(false)
         return
     end
 
@@ -860,7 +906,7 @@ function EDIT_RETURN()
         contents = contents,
     }
 
-    output(true, 1)
+    command_return(true)
 end
 
 function RM()
@@ -868,31 +914,27 @@ function RM()
     local path_list = V1
     if #path_list == 0 then
         file_error('No files or directories given to delete.')
-        output(false, 1)
+        command_return(false)
     end
 
     for i = 1, #path_list do
         local fs_item = get_fs_item(path_list[i])
         if not fs_item then
-            output(false, 1)
+            command_return(false)
             return
         end
 
         if not fs_item.parent then
             file_error('Cannot delete filesystem root.')
-            output(false, 1)
+            command_return(false)
             return
         end
 
+        ---@diagnostic disable-next-line
         fs_item.parent.contents[fs_item.name] = nil
     end
 
-    output(true, 1)
-end
-
-function PLAY()
-    if V1[1] then output(V1[1], 3) else output('', 3) end
-    output(nil, 1)
+    command_return(true)
 end
 
 function RUN()
@@ -900,24 +942,111 @@ function RUN()
     local path_list = V1
     if #path_list ~= 1 then
         file_error('Expected exactly 1 argument, got '..#path_list)
-        output(false, 1)
+        command_return(false)
         return
     end
 
     local fs_item = get_fs_item(path_list[1])
     if not fs_item then
-        output(false, 1)
+        command_return(false)
         return
     end
 
     if fs_item.type == FS.dir then
         file_error('`'..path_list[1]..'` is not a file.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
-    output(true, 1)
-    output(fs_item.contents, 4)
+    command_return(true)
+    run_paisley_script(fs_item.contents)
+end
+
+function CP()
+    ---@diagnostic disable-next-line
+    local path_list = V1
+
+    --Check if destination exists
+    if #path_list < 2 then
+        file_error('No destination specified.')
+        command_return(false)
+        return
+    end
+
+    local destination = nil
+    local destination_name = nil
+    if #path_list > 2 then
+        destination = get_fs_item(path_list[#path_list])
+        if destination and destination.type == FS.file then
+            file_error('Destination exists but is not a directory.')
+            command_return(false)
+            return
+        end
+    else
+        destination = get_fs_item(path_list[#path_list], false, true)
+        if not destination then
+            destination = get_fs_item(path_list[#path_list], true)
+            destination_name = get_fs_basename(path_list[#path_list])
+            if destination and destination.type == FS.file then
+                file_error('Destination exists but is not a directory.')
+                command_return(false)
+                return
+            end
+        else
+            if destination.type == FS.file then
+                --We want to overwrite the file.
+                destination_name = destination.name
+            end
+        end
+    end
+    if not destination then
+        command_return(false)
+        return
+    end
+
+    --Check if source(s) exist and can be copied to the destination without overwriting data.
+    for i = 1, #path_list - 1 do
+        local fs_item = get_fs_item(path_list[i])
+        if not fs_item then
+            command_return(false)
+            return
+        end
+
+        local dest_dir = destination.contents[fs_item.name]
+        if dest_dir and dest_dir.type == FS.dir then
+            file_error('Cannot overwrite directory `'..path_list[#path_list]..'/'..fs_item.name..'`.')
+            command_return(false)
+            return
+        end
+
+        if not fs_item.parent then
+            file_error('Cannot copy filesystem root.')
+            command_return(false)
+            return
+        end
+    end
+
+    for i = 1, #path_list - 1 do
+        --We've already checked that the file exists above,
+        --But if there was some weird nesting, one or more could cease to exist partway through moving.
+        --Just ignore that, as it means we did successfully move all the data over.
+
+        local fs_item = get_fs_item(path_list[i], false, true)
+        if fs_item then
+            local dest_name = fs_item.name
+            if destination_name then dest_name = destination_name end
+            local dest = destination
+
+            if destination.type == FS.file then dest = dest.parent end
+
+            ---@diagnostic disable-next-line
+            dest.contents[dest_name] = fs_deep_copy(dest, fs_item)
+            ---@diagnostic disable-next-line
+            dest.contents[dest_name].name = dest_name
+        end
+    end
+
+    command_return(true)
 end
 
 function MV()
@@ -927,26 +1056,38 @@ function MV()
     --Check if destination exists
     if #path_list < 2 then
         file_error('No destination specified.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
     local destination = nil
+    local destination_name = nil
     if #path_list > 2 then
         destination = get_fs_item(path_list[#path_list])
+        if destination and destination.type == FS.file then
+            file_error('Destination exists but is not a directory.')
+            command_return(false)
+            return
+        end
     else
         destination = get_fs_item(path_list[#path_list], false, true)
         if not destination then
             destination = get_fs_item(path_list[#path_list], true)
+            destination_name = get_fs_basename(path_list[#path_list])
+            if destination and destination.type == FS.file then
+                file_error('Destination exists but is not a directory.')
+                command_return(false)
+                return
+            end
+        else
+            if destination.type == FS.file then
+                --We want to overwrite the file.
+                destination_name = destination.name
+            end
         end
     end
     if not destination then
-        output(false, 1)
-        return
-    end
-    if destination.type == FS.file then
-        file_error('Destination exists but is not a directory.')
-        output(false, 1)
+        command_return(false)
         return
     end
 
@@ -954,25 +1095,26 @@ function MV()
     for i = 1, #path_list - 1 do
         local fs_item = get_fs_item(path_list[i])
         if not fs_item then
-            output(false, 1)
+            command_return(false)
             return
         end
 
-        if destination.contents[fs_item.name] and destination.contents[fs_item.name].type == FS.dir then
+        local dest_dir = destination.contents[fs_item.name]
+        if dest_dir and dest_dir.type == FS.dir then
             file_error('Cannot overwrite directory `'..path_list[#path_list]..'/'..fs_item.name..'`.')
-            output(false, 1)
+            command_return(false)
             return
         end
 
-        if get_fs_full_path(destination):match(get_fs_full_path(fs_item)) then
+        if get_fs_full_path(destination):match('^'..get_fs_full_path(fs_item)) then
             file_error('Cannot move `'..get_fs_full_path(fs_item)..'` into its own subdirectory `'..get_fs_full_path(destination)..'`.')
-            output(false, 1)
+            command_return(false)
             return
         end
 
         if not fs_item.parent then
             file_error('Cannot move filesystem root.')
-            output(false, 1)
+            command_return(false)
             return
         end
     end
@@ -981,15 +1123,29 @@ function MV()
         --We've already checked that the file exists above,
         --But if there was some weird nesting, one or more could cease to exist partway through moving.
         --Just ignore that, as it means we did successfully move all the data over.
+
         local fs_item = get_fs_item(path_list[i], false, true)
         if fs_item then
-            fs_item.parent = destination
-            destination.contents[fs_item.name] = fs_item
+            local dest_name = fs_item.name
+            if destination_name then dest_name = destination_name end
+            
+            if destination.type == FS.dir then
+                destination.contents[dest_name] = {
+                    name = dest_name,
+                    parent = destination,
+                    type = fs_item.type,
+                    contents = fs_item.contents,
+                }
+            else
+                destination.contents = fs_item.contents
+            end
+
+            ---@diagnostic disable-next-line
             fs_item.parent.contents[fs_item.name] = nil
         end
     end
 
-    output(true, 1)
+    command_return(true)
 end
 
 function EXISTS()
@@ -998,11 +1154,11 @@ function EXISTS()
     for i = 1, #path_list do
         local fs_item = get_fs_item(path_list[i], false, true)
         if not fs_item then
-            output(false, 1)
+            command_return(false)
             return
         end
     end
-    output(true, 1)
+    command_return(true)
 end
 
 function ISFILE()
@@ -1011,11 +1167,11 @@ function ISFILE()
     for i = 1, #path_list do
         local fs_item = get_fs_item(path_list[i], false, true)
         if not fs_item or fs_item.type == FS.dir then
-            output(false, 1)
+            command_return(false)
             return
         end
     end
-    output(true, 1)
+    command_return(true)
 end
 
 function ISDIR()
@@ -1024,13 +1180,101 @@ function ISDIR()
     for i = 1, #path_list do
         local fs_item = get_fs_item(path_list[i], false, true)
         if not fs_item or fs_item.type == FS.file then
-            output(false, 1)
+            command_return(false)
             return
         end
     end
-    output(true, 1)
+    command_return(true)
 end
 
 function STAR()
-    ---???
+    ---@diagnostic disable-next-line
+    local path_list = V1
+    if #path_list == 0 then path_list = {""} end
+
+    local results = {}
+    for i = 1, #path_list do
+        local fs_item = get_fs_item(path_list[i])
+        if not fs_item then
+            command_return({})
+            return
+        end
+
+        if fs_item.type == FS.dir then
+            local path = path_list[i]
+            if path:sub(#path, #path) == '/' then path = path:sub(1, #path - 1) end
+
+            for name, item in pairs(fs_item.contents) do
+                local item_path = name
+                if path_list[i] ~= "" then item_path = path..'/'..name end
+                table.insert(results, item_path)
+            end
+        else
+            table.insert(results, path_list[i])
+        end
+    end
+
+    command_return(results)
+end
+
+function STARDIR()
+    ---@diagnostic disable-next-line
+    local path_list = V1
+    if #path_list == 0 then path_list = {WORKING_DIR} end
+
+    local results = {}
+    for i = 1, #path_list do
+        local fs_item = get_fs_item(path_list[i])
+        if not fs_item then
+            command_return({})
+            return
+        end
+
+        if fs_item.type == FS.dir then
+            local path = path_list[i]
+            if path:sub(#path, #path) == '/' then path = path:sub(1, #path - 1) end
+
+            for name, item in pairs(fs_item.contents) do
+                if item.type == FS.dir then
+                    local item_path = name
+                    if path_list[i] ~= "" then item_path = path..'/'..name end
+                    table.insert(results, item_path)
+                end
+            end
+        end
+    end
+
+    command_return(results)
+end
+
+function STARFILE()
+    ---@diagnostic disable-next-line
+    local path_list = V1
+    if #path_list == 0 then path_list = {WORKING_DIR} end
+
+    local results = {}
+    for i = 1, #path_list do
+        local fs_item = get_fs_item(path_list[i])
+        if not fs_item then
+            command_return({})
+            return
+        end
+
+        if fs_item.type == FS.dir then
+            local path = path_list[i]
+            if path:sub(#path, #path) == '/' then path = path:sub(1, #path - 1) end
+
+            for name, item in pairs(fs_item.contents) do
+                if item.type == FS.file then
+                    local item_path = name
+                    if path_list[i] ~= "" then item_path = path..'/'..name end
+                    table.insert(results, item_path)
+                end
+            end
+        else
+            table.insert(results, path_list[i])
+        end
+    end
+
+    command_return(results)
 end

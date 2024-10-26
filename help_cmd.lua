@@ -368,6 +368,7 @@ end
 ADD_CMDS({
 	"clear:null:Clears the screen.",
 	"help:null:Displays help text about commands.",
+	"play:boolean:Plays a sound from the Plasma sound library. The sound EMPTY will stop playback. Returns true if a valid sound is given, false otherwise.",
 	"beep:null:Plays a beep on the speaker.",
 	"shutdown:null:Turns off the computer.",
 	"print:null:Takes any number of parameters and prints them to the screen.",
