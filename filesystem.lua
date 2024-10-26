@@ -709,14 +709,14 @@ function MKFILE()
         return
     end
     if fs_dir.type == FS.file then
-        file_error('`'..path_list[i]..'` is not a directory.')
+        file_error('`'..path_list[1]..'` is not a directory.')
         command_return(false)
         return
     end
 
     local create_name = get_fs_basename(path_list[1])
     if not create_name or (fs_dir.contents[create_name] and fs_dir.contents[create_name].type == FS.dir) then
-        file_error('`'..path_list[1]..'` already exists.')
+        file_error('Cannot overwrite directory `'..path_list[1]..'`.')
         command_return(false)
         return
     end
@@ -857,7 +857,9 @@ function EDIT()
         end
 
         --Allow manual syntax specification with a shebang-type thing.
+        ---@diagnostic disable-next-line
         local shebang, offset = contents:match("^#![^\n]+\n"), 2
+        ---@diagnostic disable-next-line
         if not shebang then shebang, offset = contents:match("^%-%-![^\n]+\n"), 3 end
         if shebang then
             shebang = shebang:sub(offset + 1, #shebang - 1)
