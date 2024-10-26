@@ -1280,3 +1280,78 @@ function STARFILE()
 
     command_return(results)
 end
+
+function WGET()
+    ---@diagnostic disable-next-line
+    local params = V1
+
+    local url, output_file = params[1], params[2]
+
+    if not url or url == "" then
+        file_error('No URL given to fetch.\nUsage: <color=yellow>`wget [URL] [file (optional)]`</color>')
+        command_return(false)
+        return
+    end
+
+    --If output file is not specified, deduce output file from the url.
+    if not output_file or output_file == "" then
+        local url_path = url:gmatch("[^?]+")()
+        if not url_path then
+            file_error('Invalid URL, unable to deduce the file name.')
+            command_return(false)
+            return
+        end
+
+        local deduced_file = ""
+        for i in url_path:gmatch("[^/]+") do deduced_file = i end
+
+        if deduced_file == "" then
+            file_error('Invalid URL, unable to deduce the file name.')
+            command_return(false)
+            return
+        end
+
+        output_file = deduced_file
+    end
+
+    --Make sure we aren't trying to overwrite a directory
+    local overwrite_fs_item = get_fs_item(output_file, false, true)
+    if overwrite_fs_item and overwrite_fs_item.type == FS.dir then
+        file_error('Cannot overwrite directory `'..output_file..'`.')
+        command_return(false)
+        return
+    end
+
+    --Make sure the destination directory exists
+    local destination_dir = get_fs_item(output_file, true)
+    if not destination_dir then
+        command_return(false)
+        return
+    end
+
+    EDIT_PATH = {
+        dir = destination_dir,
+        name = get_fs_basename(output_file),
+    }
+    ---@diagnostic disable-next-line
+    output(url, 5)
+end
+
+function WGET_RETURN()
+    ---@diagnostic disable-next-line
+    local response, error_msg = V3, V4
+
+    if error_msg then
+        file_error(error_msg)
+        command_return(false)
+        return
+    end
+
+    EDIT_PATH.dir.contents[EDIT_PATH.name] = {
+        parent = EDIT_PATH.dir,
+        name = EDIT_PATH.name,
+        type = FS.file,
+        contents = response,
+    }
+    command_return(true)
+end

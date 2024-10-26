@@ -18,5 +18,6 @@
   "cp:boolean:Copy a file or directory from one location to another. Returns true on success, false otherwise.",
   "*:array[string]:List all files and directories in the given directory, or current dir if not specified.",
   "*file:array[string]:List all files in the given directory, or current dir if not specified.",
-  "*dir:array[string]:List all directories in the given directory, or current dir if not specified."
+  "*dir:array[string]:List all directories in the given directory, or current dir if not specified.",
+  "wget:boolean:Fetch data from the web and save it as a file. Takes 2 parameters [URL] and [file]. If file is not specified then the filename is deduced from the URL. Returns true on success, false otherwise."
 ]
