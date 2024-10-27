@@ -378,6 +378,8 @@ ADD_CMDS({
 	"sysdate:array[number]:Gets the IRL date.\n(day, month, year)",
 	"time:number:Gets the in-game time.\n(seconds since midnight)",
 	"reboot:null:Reboots the computer.",
+	"nfc:string?:Read data from an NFC tag.\n<color=yellow>`nfc [CHANNEL]`</color>.\nIf channel is not specified, the channel stays at the current value. Returns the read data, or null on failure.",
+	"nfcwrite:null:Write data to an NFC tag.\n<color=yellow>`nfcwrite [DATA] [CHANNEL]`</color>.\nIf channel is not specified, the channel stays at the current value."
 })
 
 local function color(text, text_color) return "<color="..text_color..">"..text.."</color"..">" end
