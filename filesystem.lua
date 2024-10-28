@@ -629,6 +629,11 @@ local function run_paisley_script(script)
     output(script, 3)
 end
 
+local function run_lua_script(script)
+    ---@diagnostic disable-next-line
+    output(script, 6)
+end
+
 --[[
 	Methods:
 		json.parse(text) to parse a JSON string into data.
@@ -1246,13 +1251,13 @@ function EDIT()
         ---@diagnostic disable-next-line
         if not shebang then shebang, offset = contents:match("^%-%-![^\n]+\n"), 3 end
         if shebang then
-            shebang = shebang:sub(offset + 1, #shebang - 1)
+            shebang = shebang:sub(offset + 1, #shebang - 1):lower()
         end
 
         for name, dir in pairs(syn_dir.contents) do
             if dir.contents['files.txt'] and dir.contents['patterns.lua'] and dir.contents['scopes.lua'] then
                 for pattern in dir.contents['files.txt'].contents:gmatch("[^\n]+") do
-                    if (name == shebang) or (not shebang and create_name:match(pattern)) then
+                    if (name:lower() == shebang) or (not shebang and create_name:lower():match(pattern:lower())) then
                         syntax_enabled = "1"
                         syntax_scope = dir.contents['scopes.lua'].contents
                         syntax_pattern = dir.contents['patterns.lua'].contents
@@ -1344,8 +1349,33 @@ function RUN()
         return
     end
 
-    command_return(true)
-    run_paisley_script(fs_item.contents)
+    --Check the interpreter type of this file.
+    --.lua files (or files with a --!lua shebang) will run in a Lua function node.
+    --Anything else is assumed to be Paisley
+    local interpreter = 'paisley'
+
+    --Allow manual syntax specification with a shebang-type thing.
+    --If no shebang, then use file extension to deduce.
+    local shebang, offset = fs_item.contents:match("^#![^\n]+\n"), 2
+    if not shebang then shebang, offset = fs_item.contents:match("^%-%-![^\n]+\n"), 3 end
+    if shebang then
+        interpreter = shebang:sub(offset + 1, #shebang - 1):lower()
+    elseif fs_item.name:lower():match(".lua$") then
+        interpreter = 'lua'
+    end
+
+    if interpreter ~= 'lua' and interpreter ~= 'paisley' then
+        file_error('Unknown interpreter `'..interpreter..'`. Expected "lua" or "paisley".')
+        command_return(false)
+        return
+    end
+
+    if interpreter == 'lua' then
+        run_lua_script(fs_item.contents)
+    else
+        command_return(true)
+        run_paisley_script(fs_item.contents)
+    end
 end
 
 function CP()
