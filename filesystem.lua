@@ -629,9 +629,9 @@ local function run_paisley_script(script)
     output(script, 3)
 end
 
-local function run_lua_script(script)
+local function run_lua_script(script_args)
     ---@diagnostic disable-next-line
-    output(script, 6)
+    output_array(script_args, 6)
 end
 
 --[[
@@ -1331,8 +1331,8 @@ end
 function RUN()
     ---@diagnostic disable-next-line
     local path_list = V1
-    if #path_list ~= 1 then
-        file_error('Expected exactly 1 argument, got '..#path_list)
+    if #path_list == 0 then
+        file_error('Expected at least 1 argument, got '..#path_list)
         command_return(false)
         return
     end
@@ -1371,7 +1371,10 @@ function RUN()
     end
 
     if interpreter == 'lua' then
-        run_lua_script(fs_item.contents)
+        --Pass arguments to Lua script in V1
+        local args = {fs_item.contents}
+        for i = 2, #path_list do table.insert(args, path_list[i]) end
+        run_lua_script(args)
     else
         command_return(true)
         run_paisley_script(fs_item.contents)
