@@ -67,7 +67,7 @@ patterns = {
     },
 
     escape_char = {
-        pattern = "\\.",
+        pattern = {"\\[nt\"\'\\r %{%}]","\\%^%-%^","\\:relaxed:","\\:P","\\:yum:","\\<3","\\:heart_eyes:","\\B%)","\\:sunglasses:","\\:D","\\:grinning:","\\%^o%^","\\:smile:","\\XD","\\:laughing:","\\:lol:","\\=D","\\:smiley:","\\:sweat_smile:","\\DX","\\:tired_face:","\\;P","\\:stuck_out_tongue_winking_eye:","\\:%-%*","\\;%-%*","\\:kissing_heart:","\\:kissing:","\\:rofl:","\\:%)","\\:slight_smile:","\\:%(","\\:frown:","\\:frowning:"},
         display = "escape",
         greedy = true,
     },
