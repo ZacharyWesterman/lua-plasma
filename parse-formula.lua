@@ -3,12 +3,14 @@
 
 ---@diagnostic disable-next-line
 if not V1 then
-    V1 = 'sinc(x)/(3+1)'
+    V1 = '+-sqrt(1-x^2)'
     output = function(text, _) print(text) end
 end
 
 ---@diagnostic disable-next-line
 local FORMULA = V1:lower()
+
+local PLUS_MINUS = false
 
 local variables = {
     x = 'x',
@@ -76,6 +78,10 @@ local patterns = {
         return nil
     end},
 
+    --Special +- operator, that means to show two graphs
+    {'%+%-', function(text) return {id = TOK.plusminus, value = text, negative = false} end},
+    {'%-%+', function(text) return {id = TOK.plusminus, value = text, negative = true} end},
+
     --Operators
     {'[%*/]', function(text) return {id = TOK.mult, value = text} end},
     {'/', function(text) return {id = TOK.div, value = text} end},
@@ -90,6 +96,20 @@ local patterns = {
 --This is ordered by precedence from first to last.
 --First the capture group is defined, then the function to call when it's captured. Third is optional, and means "do NOT capture if the previous token was one of these".
 local syntax = {
+    --Plus/minus operator
+    {{TOK.plusminus, TOK.value}, function(op, value)
+        PLUS_MINUS = true
+
+        op.children = {value}
+        op.output = function()
+            op.negative = not op.negative
+            local result = value.output()
+            if not op.negative then result = '(-'..result..')' end
+            return result
+        end
+        return {id = TOK.value, children = {op}}
+    end},
+
     --Negation
     {{TOK.sub, TOK.value}, function(op, value)
         op.id = TOK.neg
@@ -292,15 +312,58 @@ function sinc(x)
     return math.sin(x) / x
 end
 
+first_i = nil
+
+precision = 2
+i_max = math.ceil(680/precision)*precision+precision
+
 coords={}
-for i=0, 680, 3 do
+for i=-precision, i_max, precision do
     x=((i-340)/256 - xzero)*xscale
     y=]]..tree.output()..[[
 
-    y=(y/yscale + yzero)*256 + 256
-    table.insert(coords, i)
-    table.insert(coords, y)
+    if y == y then --if number is undefined, skip it.
+        y=(y/yscale + yzero)*256 + 256
+        table.insert(coords, i)
+        table.insert(coords, y)
+        if not first_i then first_i = i end
+    end
 end
+
+]]
+
+if PLUS_MINUS then
+lua_code = lua_code..[[
+last_i, last_y = nil, nil
+for i=i_max, -precision, -precision do
+    x=((i-340)/256 - xzero)*xscale
+    y=]]..tree.output()..[[
+
+    if y == y then --if number is undefined, skip it.
+        last_y = y
+        last_i = i
+        y=(y/yscale + yzero)*256 + 256
+        table.insert(coords, i)
+        table.insert(coords, y)
+    end
+end
+
+--Try to attach last y value to first y value
+if first_i and last_i and first_i == last_i then
+    i=first_i
+    x=((i-340)/256 - xzero)*xscale
+    y=]]..tree.output()..[[
+
+    --if math.abs(y - last_y) < 10 then
+        y=(y/yscale + yzero)*256 + 256
+        table.insert(coords, i)
+        table.insert(coords, y)
+    --end
+end
+]]
+end
+
+lua_code = lua_code..[[
 output_array(coords, 1)
 ]]
 output(lua_code, 1)
