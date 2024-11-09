@@ -108,7 +108,7 @@ local syntax = {
             return result
         end
         return {id = TOK.value, children = {op}}
-    end},
+    end, {TOK.value, TOK.rparen}},
 
     --Negation
     {{TOK.sub, TOK.value}, function(op, value)
@@ -157,7 +157,22 @@ local syntax = {
         op.children = {lhs, rhs}
         op.output = function() return '('..lhs.output()..op.value..rhs.output()..')' end
         return {id = TOK.value, children = {op}}
-    end}
+    end},
+
+    --Plus/minus addition (A+-B or A-+B)
+    {{TOK.value, TOK.plusminus, TOK.value}, function(lhs, op, rhs)
+        PLUS_MINUS = true
+
+        op.children = {lhs, rhs}
+        op.output = function()
+            op.negative = not op.negative
+            local oper = '+'
+            if not op.negative then oper = '-' end
+            return '('..lhs.output()..oper..rhs.output()..')'
+        end
+        return {id = TOK.value, children = {op}}
+    end},
+
 }
 
 --Split text into tokens
