@@ -51,6 +51,7 @@ local TOK = {
     pow = 7,
     lparen = 8,
     rparen = 9,
+    bar = 10,
     neg = 12,
 }
 
@@ -91,6 +92,7 @@ local patterns = {
     {'%^', function(text) return {id = TOK.pow, value = text} end},
     {'%(', function(text) return {id = TOK.lparen, value = text} end},
     {'%)', function(text) return {id = TOK.rparen, value = text} end},
+    {'%|', function(text) return {id = TOK.bar, value = text} end},
 }
 
 --This is ordered by precedence from first to last.
@@ -173,6 +175,12 @@ local syntax = {
         return {id = TOK.value, children = {op}}
     end},
 
+    --Absolute value
+    {{TOK.bar, TOK.value, TOK.bar}, function(op, value, _)
+        op.children = {value}
+        op.output = function() return 'math.abs('..value.output()..')' end
+        return {id = TOK.value, children = {op}}
+    end},
 }
 
 --Split text into tokens
@@ -379,6 +387,10 @@ end
 end
 
 lua_code = lua_code..[[
-output_array(coords, 1)
+if #coords == 0 then
+    output_array({0,0}, 1)
+else
+    output_array(coords, 1)
+end
 ]]
 output(lua_code, 1)
