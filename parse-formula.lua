@@ -1,10 +1,12 @@
 --This parses a graphing formula into a valid Math Node expression.
 --E.g. "2x+pi" -> "2*#v1#+3.14159"
 
+DEBUG = false
 ---@diagnostic disable-next-line
 if not V1 then
-    V1 = '+-sqrt(1-x^2)'
+    V1 = 'gamma x'
     output = function(text, _) print(text) end
+    DEBUG = true
 end
 
 ---@diagnostic disable-next-line
@@ -13,10 +15,11 @@ local FORMULA = V1:lower()
 local PLUS_MINUS = false
 
 local variables = {
-    x = 'x',
-    t = 't',
-    pi = 3.1415926536,
-    e  = 2.7182818284,
+    x   = 'x',
+    t   = 't',
+    pi  = 3.1415926536,
+    e   = 2.7182818284,
+    phi = 1.6180339887,
 }
 
 local functions = {
@@ -37,7 +40,19 @@ local functions = {
     ceil = true,
     round = true,
     abs = true,
-    sinc = function(func, param) return 'sinc('..param.output()..')' end
+    sinc = function(func, param) return 'sinc('..param.output()..')' end,
+    min = true,
+    max = true,
+    clamp = function(func, p1, p2, p3) return 'math.min('..p3.output()..',math.max('..p1.output()..','..p2.output()..'))' end,
+    sign = function(func, param) return 'sign('..param.output()..')' end,
+    gamma = function(func, param) return 'gamma('..param.output()..')' end,
+}
+
+--Most function calls take 1 param, but some take more
+local func_param_ct = {
+    min = 2,
+    max = 2,
+    clamp = 3,
 }
 
 local TOK = {
@@ -52,7 +67,9 @@ local TOK = {
     lparen = 8,
     rparen = 9,
     bar = 10,
+    comma = 11,
     neg = 12,
+    factorial = 13,
 }
 
 local patterns = {
@@ -93,11 +110,30 @@ local patterns = {
     {'%(', function(text) return {id = TOK.lparen, value = text} end},
     {'%)', function(text) return {id = TOK.rparen, value = text} end},
     {'%|', function(text) return {id = TOK.bar, value = text} end},
+    {'!+', function(text) return {id = TOK.factorial, value = text} end},
+
+    --Commas, for inside function calls
+    {',', function(text) return {id = TOK.comma, value = text} end},
 }
 
 --This is ordered by precedence from first to last.
 --First the capture group is defined, then the function to call when it's captured. Third is optional, and means "do NOT capture if the previous token was one of these".
 local syntax = {
+    --Factorial
+    {{TOK.value, TOK.factorial}, function(value, op)
+        op.children = {value}
+        if #op.value == 1 then
+            --Use a faster function for single factorials
+            op.output = function() return 'gamma('..value.output()..'+1)' end
+        else
+            --Multifactorials are too expensive to calculate, and don't have a good general continuous formula.
+            --So we just don't allow them for now.
+            print('Multifactorials are not supported for now.')
+            error()
+        end
+        return {id = TOK.value, children = {op}}
+    end},
+
     --Plus/minus operator
     {{TOK.plusminus, TOK.value}, function(op, value)
         PLUS_MINUS = true
@@ -121,8 +157,14 @@ local syntax = {
     end, {TOK.value, TOK.rparen}},
     --Parentheses
     {{TOK.lparen, TOK.value, TOK.rparen}, function(_, value, _) return {id = TOK.value, children = {value}} end},
-    --Function calls
+
+    --Function calls with a single parameter
     {{TOK.func, TOK.value}, function(func, param)
+        if func_param_ct[func.value] and func_param_ct[func.value] ~= 1 then
+            print('Incorrect number of params to "'..func.value..'" function. Expected 1 param.')
+            error()
+        end
+
         func.children = {param}
         if functions[func.value] == true then
             func.output = function() return 'math.'..func.value..'('..param.output()..')' end
@@ -131,6 +173,38 @@ local syntax = {
         end
         return {id = TOK.value, children = {func}}
     end},
+    --Function calls with two paramteters
+    {{TOK.func, TOK.lparen, TOK.value, TOK.comma, TOK.value, TOK.rparen}, function(func, _, p1, _, p2, _)
+        if func_param_ct[func.value] and func_param_ct[func.value] ~= 2 then
+            print('Incorrect number of params to "'..func.value..'" function. Expected 2 params.')
+            error()
+        end
+
+        func.children = {p1, p2}
+        if functions[func.value] == true then
+            func.output = function() return 'math.'..func.value..'('..p1.output()..','..p2.output()..')' end
+        else
+            func.output = function() return functions[func.value](func, p1, p2) end
+        end
+        return {id = TOK.value, children = {func}}
+    end},
+    --Function calls with three paramteters
+    {{TOK.func, TOK.lparen, TOK.value, TOK.comma, TOK.value, TOK.comma, TOK.value, TOK.rparen}, function(func, _, p1, _, p2, _, p3, _)
+        if func_param_ct[func.value] and func_param_ct[func.value] ~= 3 then
+            print('Incorrect number of params to "'..func.value..'" function. Expected 3 params.')
+            error()
+        end
+
+        func.children = {p1, p2, p3}
+        if functions[func.value] == true then
+            func.output = function() return 'math.'..func.value..'('..p1.output()..','..p2.output()..','..p3.output()..')' end
+        else
+            func.output = function() return functions[func.value](func, p1, p2, p3) end
+        end
+        return {id = TOK.value, children = {func}}
+    end},
+    --I don't expect we'll need functions with more than three params, so don't need to let it be dynamic.
+
     --Multiplication of the form "2x" or "sin2pi" etc.
     {{TOK.value, TOK.value}, function(lhs, rhs)
         return {id = TOK.value, children = {{
@@ -323,6 +397,15 @@ end
 local tree = parse(token_list)
 if not tree then error() end
 
+if DEBUG then
+    print(tree.output())
+    if PLUS_MINUS then
+        print('OR')
+        print(tree.output())
+    end
+    error()
+end
+
 local lua_code = [[
 t=V1
 yscale=read_var("yscale")
@@ -333,6 +416,41 @@ yzero=read_var("y")
 function sinc(x)
     if x == 0 then return 1 end
     return math.sin(x) / x
+end
+function sign(x)
+    if x > 0 then return 1 end
+    if x < 0 then return -1 end
+    return 0
+end
+
+-- Lanczos coefficients for gamma function approximation
+local g = 7
+local coefficients = {
+    0.99999999999980993,
+    676.5203681218851,
+    -1259.1392167224028,
+    771.32342877765313,
+    -176.61502916214059,
+    12.507343278686905,
+    -0.13857109526572012,
+    9.9843695780195716e-6,
+    1.5056327351493116e-7
+}
+
+-- Approximation of the Gamma function
+function gamma(z)
+    if z < 0.5 then
+        -- Reflection formula for arguments less than 0.5
+        return math.pi / (math.sin(math.pi * z) * gamma(1 - z))
+    else
+        z = z - 1
+        local x = coefficients[1]
+        for i = 2, #coefficients do
+            x = x + coefficients[i] / (z + i - 1)
+        end
+        local t = z + g + 0.5
+        return math.sqrt(2 * math.pi) * t^(z + 0.5) * math.exp(-t) * x
+    end
 end
 
 first_i = nil
