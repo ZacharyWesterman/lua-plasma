@@ -74,6 +74,7 @@ local sometimes_undefined = {
     cot = true,
     log = true,
     ln = true,
+    sqrt = true,
 }
 local may_be_undefined = false
 
