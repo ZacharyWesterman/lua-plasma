@@ -14,6 +14,7 @@ end
 local FORMULA = V1:lower()
 
 local PLUS_MINUS = false
+local TIME_DEPENDANT = false
 
 local variables = {
     x   = 'x',
@@ -109,7 +110,10 @@ local patterns = {
             used_funcs[text] = true
             return {id = TOK.func, value = text}
         end
-        if variables[text] then return {id = TOK.value, value = variables[text]} end
+        if variables[text] then
+            if text == 't' then TIME_DEPENDANT = true end
+            return {id = TOK.value, value = variables[text]}
+        end
 
         print('Invalid symbol "'..text..'".')
         return nil
@@ -559,3 +563,4 @@ end
 
 lua_code = lua_code..coord_check..'output_array(coords, 1)'
 output(lua_code, 1)
+output(TIME_DEPENDANT, 2)
