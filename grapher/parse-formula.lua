@@ -159,6 +159,7 @@ local syntax = {
         op.children = {value}
         if #op.value == 1 then
             --Use a faster function for single factorials
+            used_funcs.gamma = true
             op.output = function() return 'gamma('..value.output()..'+1)' end
         else
             --Multifactorials are too expensive to calculate, and don't have a good general continuous formula.
