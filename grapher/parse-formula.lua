@@ -100,10 +100,6 @@ local patterns = {
 
     --Identifiers can be functions or variables.
     {'[a-zA-Z]+', function(text)
-        if type(variables[text]) == 'number' then
-            return {id = TOK.value, value = variables[text]}
-        end
-
         if functions[text] then
             --Keep track of which functions are used, for optimization later
             if sometimes_undefined[text] then may_be_undefined = true end
