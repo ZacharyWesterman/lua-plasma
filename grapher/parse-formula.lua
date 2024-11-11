@@ -19,7 +19,7 @@ local TIME_DEPENDANT = false
 local variables = {
     x   = 'x',
     t   = 't',
-    pi  = 3.1415926536,
+    pi  = 'math.pi', --Use Lua's built-in constant for pi, as it's likely more accurate than a decimal representation.
     e   = 2.7182818284,
     phi = 1.6180339887,
 }
@@ -35,7 +35,7 @@ local functions = {
     log = function(func, param)
         local base = 10
         if func.base then base = func.base end
-        return '(math.log('..param.output()..')/math.log('..base..'))'
+        return 'math.log('..param.output()..','..base..')'
     end,
     ln = function(func, param) return 'math.log('..param.output()..')' end,
     floor = true,
@@ -250,7 +250,12 @@ local syntax = {
     --Multiplication
     {{TOK.value, {TOK.mult, TOK.div, TOK.mod}, TOK.value}, function(lhs, op, rhs)
         op.children = {lhs, rhs}
-        op.output = function() return '('..lhs.output()..op.value..rhs.output()..')' end
+        if op.id == TOK.mod then
+            --Get continuous remainder, not integer remainder. Looks better when graphing.
+            op.output = function() return 'math.fmod('..lhs.output()..','..rhs.output()..')' end
+        else
+            op.output = function() return '('..lhs.output()..op.value..rhs.output()..')' end
+        end
         return {id = TOK.value, children = {op}}
     end},
     --Addition
