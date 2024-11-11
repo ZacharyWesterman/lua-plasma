@@ -4,7 +4,8 @@
 DEBUG = false
 ---@diagnostic disable-next-line
 if not V1 then
-    V1 = 'gamma x'
+    if not arg[1] then error('No formula given!') end
+    V1 = arg[1]
     output = function(text, _) print(text) end
     DEBUG = true
 end
@@ -55,6 +56,17 @@ local func_param_ct = {
     clamp = 3,
 }
 
+--Some functions are undefined at certain X values.
+--Keep track of those so we can optimize away some validation code if the function is always well defined.
+local sometimes_undefined = {
+    asin = true,
+    acos = true,
+    atan = true,
+    log = true,
+    ln = true,
+}
+local may_be_undefined = false
+
 local TOK = {
     value = 0,
     func = 1,
@@ -71,6 +83,8 @@ local TOK = {
     neg = 12,
     factorial = 13,
 }
+
+local used_funcs = {}
 
 local patterns = {
     --Be generally forgiving with numbers
@@ -89,7 +103,12 @@ local patterns = {
             return {id = TOK.value, value = variables[text]}
         end
 
-        if functions[text] then return {id = TOK.func, value = text} end
+        if functions[text] then
+            --Keep track of which functions are used, for optimization later
+            if sometimes_undefined[text] then may_be_undefined = true end
+            used_funcs[text] = true
+            return {id = TOK.func, value = text}
+        end
         if variables[text] then return {id = TOK.value, value = variables[text]} end
 
         print('Invalid symbol "'..text..'".')
@@ -101,9 +120,15 @@ local patterns = {
     {'%-%+', function(text) return {id = TOK.plusminus, value = text, negative = true} end},
 
     --Operators
-    {'[%*/]', function(text) return {id = TOK.mult, value = text} end},
-    {'/', function(text) return {id = TOK.div, value = text} end},
-    {'%%', function(text) return {id = TOK.mod, value = text} end},
+    {'%*', function(text) return {id = TOK.mult, value = text} end},
+    {'/', function(text)
+        may_be_undefined = true
+        return {id = TOK.div, value = text}
+    end},
+    {'%%', function(text)
+        may_be_undefined = true
+        return {id = TOK.mod, value = text}
+    end},
     {'%+', function(text) return {id = TOK.add, value = text} end},
     {'%-', function(text) return {id = TOK.sub, value = text} end},
     {'%^', function(text) return {id = TOK.pow, value = text} end},
@@ -397,61 +422,88 @@ end
 local tree = parse(token_list)
 if not tree then error() end
 
-if DEBUG then
-    print(tree.output())
-    if PLUS_MINUS then
-        print('OR')
-        print(tree.output())
+-- if DEBUG then
+--     print(tree.output())
+--     if PLUS_MINUS then
+--         print('OR')
+--         print(tree.output())
+--     end
+--     error()
+-- end
+
+--Generate code
+local special_func_text = {
+    sinc = [[
+    function sinc(x)
+        if x == 0 then return 1 end
+        return math.sin(x) / x
     end
-    error()
+    ]],
+    sign = [[
+    function sign(x)
+        if x > 0 then return 1 end
+        if x < 0 then return -1 end
+        return 0
+    end
+    ]],
+    gamma = [[
+    -- Lanczos coefficients for gamma function approximation
+    local g = 7
+    local coefficients = {
+        0.99999999999980993,
+        676.5203681218851,
+        -1259.1392167224028,
+        771.32342877765313,
+        -176.61502916214059,
+        12.507343278686905,
+        -0.13857109526572012,
+        9.9843695780195716e-6,
+        1.5056327351493116e-7
+    }
+
+    -- Approximation of the Gamma function
+    function gamma(z)
+        if z < 0.5 then
+            -- Reflection formula for arguments less than 0.5
+            return math.pi / (math.sin(math.pi * z) * gamma(1 - z))
+        else
+            z = z - 1
+            local x = coefficients[1]
+            for i = 2, #coefficients do
+                x = x + coefficients[i] / (z + i - 1)
+            end
+            local t = z + g + 0.5
+            return math.sqrt(2 * math.pi) * t^(z + 0.5) * math.exp(-t) * x
+        end
+    end
+    ]],
+}
+
+local lua_code = ''
+--Insert only the functions that are actually used in the formula.
+for func_name, func_text in pairs(special_func_text) do
+    if used_funcs[func_name] then
+        --Remove indent (makes output look better)
+        local m = func_text:match('^ +')
+        if m then func_text = func_text:sub(#m+1, #func_text):gsub('\n'..m, '\n') end
+
+        lua_code = lua_code .. func_text .. '\n'
+    end
 end
 
-local lua_code = [[
+--If output may be undefined, inject undefined-checking code.
+local coord_check = ''
+if may_be_undefined then
+    coord_check = 'if #coords == 0 then coords = {0,0} end\n'
+end
+
+
+lua_code = lua_code .. [[
 t=V1
 yscale=read_var("yscale")
 xscale=read_var("xscale")
 xzero=read_var("x")
 yzero=read_var("y")
-
-function sinc(x)
-    if x == 0 then return 1 end
-    return math.sin(x) / x
-end
-function sign(x)
-    if x > 0 then return 1 end
-    if x < 0 then return -1 end
-    return 0
-end
-
--- Lanczos coefficients for gamma function approximation
-local g = 7
-local coefficients = {
-    0.99999999999980993,
-    676.5203681218851,
-    -1259.1392167224028,
-    771.32342877765313,
-    -176.61502916214059,
-    12.507343278686905,
-    -0.13857109526572012,
-    9.9843695780195716e-6,
-    1.5056327351493116e-7
-}
-
--- Approximation of the Gamma function
-function gamma(z)
-    if z < 0.5 then
-        -- Reflection formula for arguments less than 0.5
-        return math.pi / (math.sin(math.pi * z) * gamma(1 - z))
-    else
-        z = z - 1
-        local x = coefficients[1]
-        for i = 2, #coefficients do
-            x = x + coefficients[i] / (z + i - 1)
-        end
-        local t = z + g + 0.5
-        return math.sqrt(2 * math.pi) * t^(z + 0.5) * math.exp(-t) * x
-    end
-end
 
 first_i = nil
 
@@ -464,10 +516,11 @@ for i=-precision, i_max, precision do
     y=]]..tree.output()..[[
 
     if y == y then --if number is undefined, skip it.
+        last_y = y
+        last_i = i
         y=(y/yscale + yzero)*256 + 256
         table.insert(coords, i)
         table.insert(coords, y)
-        if not first_i then first_i = i end
     end
 end
 
@@ -495,20 +548,14 @@ if first_i and last_i and first_i == last_i then
     x=((i-340)/256 - xzero)*xscale
     y=]]..tree.output()..[[
 
-    --if math.abs(y - last_y) < 10 then
+    if math.abs(y - last_y) < 10 then
         y=(y/yscale + yzero)*256 + 256
         table.insert(coords, i)
         table.insert(coords, y)
-    --end
+    end
 end
 ]]
 end
 
-lua_code = lua_code..[[
-if #coords == 0 then
-    output_array({0,0}, 1)
-else
-    output_array(coords, 1)
-end
-]]
+lua_code = lua_code..coord_check..'output_array(coords, 1)'
 output(lua_code, 1)
