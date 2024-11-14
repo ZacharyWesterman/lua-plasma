@@ -433,6 +433,12 @@ local function parse(tokens)
 
     local t = tokens[1]
     if t and t.id == TOK.value and t.children then t = t.children[1] end
+
+    if t.id ~= TOK.value and not t.children then
+        print('Syntax Error')
+        return nil
+    end
+
     return t
 end
 local tree = parse(token_list)
