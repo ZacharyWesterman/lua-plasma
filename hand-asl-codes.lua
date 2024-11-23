@@ -56,7 +56,7 @@ local W = {
     fwd_left = {60, 30},
 }
 
-local asl_words = {
+local phonemes = {
     --index middle ring pinky thumb wrist
     ['a'] = {B, B, B, B, T.up, S},
     ['b'] = {S, S, S, S, T.bent, S},
@@ -98,11 +98,17 @@ local asl_words = {
     ['~'] = {S, S, S, S, S, S}, --reset hand
 }
 
-local this_letter = V1:sub(1,1)
-local asl = asl_words[this_letter]
-if asl then
-    for i = 1, #asl do
+--Output a single phoneme
+local function output_phoneme(phoneme)
+    if not phoneme then return end
+
+    --Output each finger to a separate output line
+    --Should only range from 1 to 6
+    for i = 1, #phoneme do
         ---@diagnostic disable-next-line
-        output_array(asl[i], i)
+        output_array(phoneme[i], i)
     end
 end
+
+local this_letter = V1:sub(1,1):lower()
+output_phoneme(phonemes[this_letter])
