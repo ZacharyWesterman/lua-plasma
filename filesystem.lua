@@ -38,7 +38,7 @@ local function mkfs(path_names, filename, file_contents)
 end
 
 --Make built-in syntax highlighting files.
-mkfs({'etc', 'syntax'}, 'theme.lua', [[
+mkfs({ 'etc', 'syntax' }, 'theme.lua', [[
 --Color scheme used to highlight syntax.
 theme = {
     variable = {"color", "#d0e0ff"},
@@ -58,8 +58,8 @@ theme = {
 }
 ]])
 
-mkfs({'etc', 'syntax', 'paisley'}, 'files.txt', '.p$\n.pai$\n.paisley$')
-mkfs({'etc', 'syntax', 'paisley'}, 'patterns.lua', [[
+mkfs({ 'etc', 'syntax', 'paisley' }, 'files.txt', '.p$\n.pai$\n.paisley$')
+mkfs({ 'etc', 'syntax', 'paisley' }, 'patterns.lua', [[
 patterns = {
     comment = {
         pattern = "#.*$",
@@ -67,17 +67,17 @@ patterns = {
     },
 
     escape_char = {
-        pattern = {"\\[nt\"\'\\r %{%}]","\\%^%-%^","\\:relaxed:","\\:P","\\:yum:","\\<3","\\:heart_eyes:","\\B%)","\\:sunglasses:","\\:D","\\:grinning:","\\%^o%^","\\:smile:","\\XD","\\:laughing:","\\:lol:","\\=D","\\:smiley:","\\:sweat_smile:","\\DX","\\:tired_face:","\\;P","\\:stuck_out_tongue_winking_eye:","\\:%-%*","\\;%-%*","\\:kissing_heart:","\\:kissing:","\\:rofl:","\\:%)","\\:slight_smile:","\\:%(","\\:frown:","\\:frowning:"},
+        pattern = { "\\[nt\"\'\\r %{%}]", "\\%^%-%^", "\\:relaxed:", "\\:P", "\\:yum:", "\\<3", "\\:heart_eyes:", "\\B%)", "\\:sunglasses:", "\\:D", "\\:grinning:", "\\%^o%^", "\\:smile:", "\\XD", "\\:laughing:", "\\:lol:", "\\=D", "\\:smiley:", "\\:sweat_smile:", "\\DX", "\\:tired_face:", "\\;P", "\\:stuck_out_tongue_winking_eye:", "\\:%-%*", "\\;%-%*", "\\:kissing_heart:", "\\:kissing:", "\\:rofl:", "\\:%)", "\\:slight_smile:", "\\:%(", "\\:frown:", "\\:frowning:" },
         display = "escape",
         greedy = true,
     },
 
     param = {
         pattern = "[^ \t\n\r\"\'{};$]+", --"
-        display = "param", --Just use the same color I guess
+        display = "param",         --Just use the same color I guess
     },
     param_num = {
-        pattern = {"%d+%.%d*", "%d+", "%.%d+"},
+        pattern = { "%d+%.%d*", "%d+", "%.%d+" },
         display = "number",
     },
 
@@ -88,27 +88,30 @@ patterns = {
 
     --keywords
     kwd_1 = {
-        pattern = {"for", "in", "if", "elif", "while", "delete", "break", "continue", "define", "match"}, --parser auto-detects if it's at a word boundary
-        display = "keyword", --apply coloring from theme.keyword
-        scope = "normal", --change scope (so commands aren't highlighted)
+        --parser auto-detects if it's at a word boundary
+        pattern = { "for", "in", "if", "elif", "while", "delete", "break", "cache", "continue", "define", "match" },
+        --apply coloring from theme.keyword
+        display = "keyword",
+        --change scope (so commands aren't highlighted)
+        scope = "normal",
     },
     kwd_2 = {
-        pattern = {"do", "then", "else", "end", "return", "stop"},
+        pattern = { "do", "then", "else", "end", "return", "stop" },
         display = "keyword",
         scope = "initial",
     },
     kwd_3 = {
-        pattern = "gosub",
+        pattern = { "gosub", "break[ \\t]+cache" },
         display = "keyword",
-        scope = "lbl",
+        push = "lbl",
     },
     kwd_4 = {
         pattern = "subroutine",
         display = "keyword",
-        push = "lbl2",
+        push = "lbl",
     },
     expr_keywords = {
-        pattern = {"if", "else"},
+        pattern = { "if", "else" },
         display = "keyword",
     },
     expr_keywords2 = {
@@ -123,11 +126,6 @@ patterns = {
     },
 
     lbl = {
-        pattern = "[a-zA-Z0-9_]+",
-        display = "special_functions",
-    },
-
-    lbl2 = {
         pattern = "[a-zA-Z0-9_]+",
         display = "special_functions",
         pop = true,
@@ -152,32 +150,32 @@ patterns = {
     },
 
     operator = {
-        pattern = {"and", "or", "not", "xor", "in", "[%+%-%*/%%:&><=,]", "~=", "!=", "exists", "like"},
+        pattern = { "and", "or", "not", "xor", "in", "[%+%-%*/%%:&><=,]", "~=", "!=", "exists", "like" },
         display = "operator",
     },
 
     variable = {
-        pattern = {"[a-zA-Z_][a-zA-Z_0-9]*"},
+        pattern = { "[a-zA-Z_][a-zA-Z_0-9]*" },
         display = "variable",
     },
 
     var_special = {
-        pattern = "[@%$]",
+        pattern = { "%$", "@%d*" },
         display = "special_var",
     },
 
     number = {
-        pattern = {"0[xb][0-9_a-fA-F]*", "[0-9]*%.[0-9]+", "[0-9]+"},
+        pattern = { "0[xb][0-9_a-fA-F]*", "[0-9]*%.[0-9]+", "[0-9]+" },
         display = "number",
     },
 
     constant = {
-        pattern = {"true", "false", "null"},
+        pattern = { "true", "false", "null" },
         display = "literal",
     },
 
     let = {
-        pattern = {"let", "initial"},
+        pattern = { "let", "initial" },
         display = "keyword",
         scope = "let",
     },
@@ -244,16 +242,16 @@ patterns = {
     },
 }
 ]])
-mkfs({'etc', 'syntax', 'paisley'}, 'scopes.lua', [[
+mkfs({ 'etc', 'syntax', 'paisley' }, 'scopes.lua', [[
 --Each "scope" has a list of patterns that will be highlighted.
 scopes = {
     --This is a special scope that is the FIRST one visible when scope stack is empty
     --This global scope is visible IN ADDITION TO the current scope.
     global = {
         "comment",
+        "kwd_3",
         "kwd_1",
         "kwd_2",
-        "kwd_3",
         "kwd_4",
         "expr_start",
         "string_start",
@@ -349,8 +347,8 @@ scopes = {
 }
 ]])
 
-mkfs({'etc', 'syntax', 'lua'}, 'files.txt', '.lua$')
-mkfs({'etc', 'syntax', 'lua'}, 'patterns.lua', [[
+mkfs({ 'etc', 'syntax', 'lua' }, 'files.txt', '.lua$')
+mkfs({ 'etc', 'syntax', 'lua' }, 'patterns.lua', [[
 patterns = {
     comment = {
         pattern = "%-%-.*$",
@@ -427,7 +425,7 @@ patterns = {
     },
 }
 ]])
-mkfs({'etc', 'syntax', 'lua'}, 'scopes.lua', [[
+mkfs({ 'etc', 'syntax', 'lua' }, 'scopes.lua', [[
 --Each "scope" has a list of patterns that will be highlighted.
 scopes = {
     --This is a special scope that is the FIRST one visible when scope stack is empty
@@ -461,8 +459,8 @@ scopes = {
 }
 ]])
 
-mkfs({'etc', 'syntax', 'json'}, 'files.txt', '.json$')
-mkfs({'etc', 'syntax', 'json'}, 'patterns.lua', [[
+mkfs({ 'etc', 'syntax', 'json' }, 'files.txt', '.json$')
+mkfs({ 'etc', 'syntax', 'json' }, 'patterns.lua', [[
 patterns = {
     escape_char = {
         pattern = {"\\u....", "\\."},
@@ -497,7 +495,7 @@ patterns = {
     },
 }
 ]])
-mkfs({'etc', 'syntax', 'json'}, 'scopes.lua', [[
+mkfs({ 'etc', 'syntax', 'json' }, 'scopes.lua', [[
 --Each "scope" has a list of patterns that will be highlighted.
 scopes = {
     --This is a special scope that is the FIRST one visible when scope stack is empty
@@ -518,23 +516,24 @@ scopes = {
 }
 ]])
 
-mkfs({'bin'})
-mkfs({'home'}, 'README', "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\n\n/bin: User scripts can be stored here.\n/etc: Config files can be stored here.\n/home: Everything else can be stored here.")
+mkfs({ 'bin' })
+mkfs({ 'home' }, 'README',
+    "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\n\n/bin: User scripts can be stored here.\n/etc: Config files can be stored here.\n/home: Everything else can be stored here.")
 WORKING_DIR = '/home'
 
-local function color(text, text_color) return '<color='..text_color..'>'..text..'<'..'/color>' end
+local function color(text, text_color) return '<color=' .. text_color .. '>' .. text .. '<' .. '/color>' end
 
 local function file_error(msg)
-    print(color('ERROR: ','#E58357') .. msg)
+    print(color('ERROR: ', '#E58357') .. msg)
 end
 
 local function get_fs_item(path, ignore_last, quiet)
     local dir, prev_dir = FILESYSTEM, nil
-    if path:sub(1,1) ~= '/' then dir = get_fs_item(WORKING_DIR) end
+    if path:sub(1, 1) ~= '/' then dir = get_fs_item(WORKING_DIR) end
 
     for name in path:gsub('\\', '/'):gmatch('[^/]+') do
         if not dir or dir.type == FS.file then
-            if not quiet then file_error('No such file `'..path..'`.') end
+            if not quiet then file_error('No such file `' .. path .. '`.') end
             return nil
         end
 
@@ -549,7 +548,7 @@ local function get_fs_item(path, ignore_last, quiet)
     if ignore_last and prev_dir then dir = prev_dir end
 
     if not dir then
-        if not quiet then file_error('No such file `'..path..'`.') end
+        if not quiet then file_error('No such file `' .. path .. '`.') end
         return nil
     end
 
@@ -573,10 +572,10 @@ local function get_fs_full_path(fs_item)
 
     while fs_item.parent do
         fs_item = fs_item.parent
-        if fs_item.parent then path = fs_item.name..'/'..path end
+        if fs_item.parent then path = fs_item.name .. '/' .. path end
     end
 
-    if path:sub(1,1) == '/' then return path else return '/'..path end
+    if path:sub(1, 1) == '/' then return path else return '/' .. path end
 end
 
 local function get_fs_basename(path)
@@ -635,341 +634,343 @@ local function run_lua_script(script_args)
 end
 
 --[[
-	Methods:
-		json.parse(text) to parse a JSON string into data.
-		json.stringify(data, [indent]) to convert data into a JSON string. Text will only be pretty-printed if indent is specified.
+    Methods:
+        json.parse(text) to parse a JSON string into data.
+        json.stringify(data, [indent]) to convert data into a JSON string. Text will only be pretty-printed if indent is specified.
 --]]
 ---@diagnostic disable-next-line
 json = {
-	---Convert arbitrary data into a JSON string representation.
-	---Will error if data is something that cannot be serialized, such as a function, userdata or thread.
-	---@param data any The data to serialize.
-	---@param indent integer|nil The number of spaces to indent on each scope change.
-	---@param return_error boolean|nil If true, return the error as a second parameter. Otherwise halts program execution on error.
-	---@return string, string|nil
-	stringify = function(data, indent, return_error)
-		local function __stringify(data, indent, __indent)
-			local tp = type(data)
+    ---Convert arbitrary data into a JSON string representation.
+    ---Will error if data is something that cannot be serialized, such as a function, userdata or thread.
+    ---@param data any The data to serialize.
+    ---@param indent integer|nil The number of spaces to indent on each scope change.
+    ---@param return_error boolean|nil If true, return the error as a second parameter. Otherwise halts program execution on error.
+    ---@return string, string|nil
+    stringify = function(data, indent, return_error)
+        local function __stringify(data, indent, __indent)
+            local tp = type(data)
 
-			if tp == 'table' then
-				local next_indent
+            if tp == 'table' then
+                local next_indent
 
-				if indent ~= nil then
-					if __indent == nil then __indent = 0 end
-					next_indent = indent + __indent
-				end
+                if indent ~= nil then
+                    if __indent == nil then __indent = 0 end
+                    next_indent = indent + __indent
+                end
 
-				--Check if a table is an array or an object
-				local is_array = true
-				local meta = getmetatable(data)
-				if meta and meta.is_array ~= nil then
-					is_array = meta.is_array
-				else
-					for key, value in pairs(data) do
-						if type(key) ~= 'number' then
-							is_array = false
-							break
-						end
-					end
-				end
+                --Check if a table is an array or an object
+                local is_array = true
+                local meta = getmetatable(data)
+                if meta and meta.is_array ~= nil then
+                    is_array = meta.is_array
+                else
+                    for key, value in pairs(data) do
+                        if type(key) ~= 'number' then
+                            is_array = false
+                            break
+                        end
+                    end
+                end
 
-				local result = ''
-				if is_array then
-					if indent ~= nil then result = '[\n' else result = '[' end
-					for key=1, #data do
-						local str = __stringify(data[key], indent, next_indent)
-						if key ~= #data then str = str .. ',' end
-						if indent ~= nil then
-							result = result .. (' '):rep(next_indent) .. str .. '\n'
-						else
-							result = result .. str
-						end
-					end
-					if indent ~= nil then return result .. (' '):rep(__indent) .. ']' else return result .. ']' end
-				else
-					if indent ~= nil then result = '{\n' else result = '{' end
-					local colon = ':'
-					if indent ~= nil then colon = ': ' end
-					local ct = 0
-					for key, value in pairs(data) do
-						local str = __stringify(tostring(key), indent, next_indent) .. colon .. __stringify(value, indent, next_indent)
-						if indent ~= nil then
-							if ct > 0 then result = result .. ',\n' end
-							result = result .. (' '):rep(next_indent) .. str
-						else
-							if ct > 0 then result = result .. ',' end
-							result = result .. str
-						end
-						ct = ct + 1
-					end
-					if indent ~= nil then return result .. '\n' .. (' '):rep(__indent) .. '}' else return result .. '}' end
-				end
+                local result = ''
+                if is_array then
+                    if indent ~= nil then result = '[\n' else result = '[' end
+                    for key = 1, #data do
+                        local str = __stringify(data[key], indent, next_indent)
+                        if key ~= #data then str = str .. ',' end
+                        if indent ~= nil then
+                            result = result .. (' '):rep(next_indent) .. str .. '\n'
+                        else
+                            result = result .. str
+                        end
+                    end
+                    if indent ~= nil then return result .. (' '):rep(__indent) .. ']' else return result .. ']' end
+                else
+                    if indent ~= nil then result = '{\n' else result = '{' end
+                    local colon = ':'
+                    if indent ~= nil then colon = ': ' end
+                    local ct = 0
+                    for key, value in pairs(data) do
+                        local str = __stringify(tostring(key), indent, next_indent) ..
+                            colon .. __stringify(value, indent, next_indent)
+                        if indent ~= nil then
+                            if ct > 0 then result = result .. ',\n' end
+                            result = result .. (' '):rep(next_indent) .. str
+                        else
+                            if ct > 0 then result = result .. ',' end
+                            result = result .. str
+                        end
+                        ct = ct + 1
+                    end
+                    if indent ~= nil then return result .. '\n' .. (' '):rep(__indent) .. '}' else return result .. '}' end
+                end
+            elseif tp == 'string' then
+                local repl_chars = {
+                    { '\\', '\\\\' },
+                    { '\"', '\\"' },
+                    { '\n', '\\n' },
+                    { '\t', '\\t' },
+                }
+                local result = data
+                local i
+                for i = 1, #repl_chars do
+                    result = result:gsub(repl_chars[i][1], repl_chars[i][2])
+                end
+                return '"' .. result .. '"'
+            elseif tp == 'number' then
+                return tostring(data)
+            elseif data == true then
+                return 'true'
+            elseif data == false then
+                return 'false'
+            elseif data == nil then
+                return 'null'
+            else
+                local msg = 'Unable to stringify data "' .. tostring(data) .. '" of type ' .. tp .. '.'
+                if return_error then
+                    return '', msg
+                else
+                    error(msg)
+                end
+            end
+        end
 
-			elseif tp == 'string' then
-				local repl_chars = {
-					{'\\', '\\\\'},
-					{'\"', '\\"'},
-					{'\n', '\\n'},
-					{'\t', '\\t'},
-				}
-				local result = data
-				local i
-				for i=1, #repl_chars do
-					result = result:gsub(repl_chars[i][1], repl_chars[i][2])
-				end
-				return '"' .. result .. '"'
-			elseif tp == 'number' then
-				return tostring(data)
-			elseif data == true then
-				return 'true'
-			elseif data == false then
-				return 'false'
-			elseif data == nil then
-				return 'null'
-			else
-				local msg = 'Unable to stringify data "'..tostring(data)..'" of type '..tp..'.'
-				if return_error then
-					return '', msg
-				else
-					error(msg)
-				end
-			end
-		end
+        return __stringify(data, indent)
+    end,
 
-		return __stringify(data, indent)
-	end,
+    ---Parse a JSON string representation into arbitrary data.
+    ---Will error if the JSON string is invalid.
+    ---@param text string The JSON string to parse.
+    ---@param return_error boolean|nil If true, return the error as a second parameter. Otherwise halts program execution on error.
+    ---@return any, string|nil
+    parse = function(text, return_error)
+        local line = 1
+        local col = 1
+        local tokens = {}
 
-	---Parse a JSON string representation into arbitrary data.
-	---Will error if the JSON string is invalid.
-	---@param text string The JSON string to parse.
-	---@param return_error boolean|nil If true, return the error as a second parameter. Otherwise halts program execution on error.
-	---@return any, string|nil
-	parse = function(text, return_error)
-		local line = 1
-		local col = 1
-		local tokens = {}
+        local _tok = {
+            literal = 0,
+            comma = 1,
+            colon = 2,
+            lbrace = 3,
+            rbrace = 4,
+            lbracket = 5,
+            rbracket = 6,
+        }
 
-		local _tok = {
-			literal = 0,
-			comma = 1,
-			colon = 2,
-			lbrace = 3,
-			rbrace = 4,
-			lbracket = 5,
-			rbracket = 6,
-		}
+        local newtoken = function(value, kind)
+            return {
+                value = value,
+                kind = kind,
+                line = line,
+                col = col,
+            }
+        end
 
-		local newtoken = function(value, kind)
-			return {
-				value=value,
-				kind=kind,
-				line=line,
-				col=col,
-			}
-		end
+        local do_error = function(msg)
+            error('JSON parse error at [' .. line .. ':' .. col .. ']: ' .. msg)
+        end
 
-		local do_error = function(msg)
-			error('JSON parse error at ['..line..':'..col..']: '..msg)
-		end
+        if return_error then
+            do_error = function(msg)
+                return nil, 'JSON parse error at [' .. line .. ':' .. col .. ']: ' .. msg
+            end
+        end
 
-		if return_error then
-			do_error = function(msg)
-				return nil, 'JSON parse error at ['..line..':'..col..']: '..msg
-			end
-		end
+        --Split JSON string into tokens
+        local in_string = false
+        local escaped = false
+        local i = 1
+        local this_token = ''
+        local paren_stack = {}
+        while i <= #text do
+            local chr = text:sub(i, i)
 
-		--Split JSON string into tokens
-		local in_string = false
-		local escaped = false
-		local i = 1
-		local this_token = ''
-		local paren_stack = {}
-		while i <= #text do
-			local chr = text:sub(i,i)
+            col = col + 1
+            if chr == '\n' then
+                line = line + 1
+                col = 0
+                if in_string then
+                    return do_error('Unexpected line ending inside string.')
+                end
+            elseif in_string then
+                if escaped then
+                    if chr == 'n' then chr = '\n' end
+                    if chr == 't' then chr = '\t' end
+                    this_token = this_token .. chr
+                    escaped = false
+                elseif chr == '\\' and text:sub(i + 1, i + 1) ~= 'u' then
+                    --Don't mangle unicode sequences... we usually can't render those, so just leave them as-is.
+                    --All others can be handled properly.
+                    escaped = true
+                elseif chr == '"' then
+                    --End string, append token
+                    table.insert(tokens, newtoken(this_token, _tok.literal))
+                    this_token = ''
+                    in_string = false
+                else
+                    this_token = this_token .. chr
+                end
+            elseif chr == '[' then
+                table.insert(tokens, newtoken(chr, _tok.lbracket))
+                table.insert(paren_stack, chr)
+            elseif chr == ']' then
+                table.insert(tokens, newtoken(chr, _tok.rbracket))
+                if #paren_stack == 0 then return do_error('Unexpected closing bracket "]".') end
+                if table.remove(paren_stack) ~= '[' then return do_error('Bracket mismatch (expected "}", got "]").') end
+            elseif chr == '{' then
+                table.insert(tokens, newtoken(chr, _tok.lbrace))
+                table.insert(paren_stack, chr)
+            elseif chr == '}' then
+                table.insert(tokens, newtoken(chr, _tok.rbrace))
+                if #paren_stack == 0 then return do_error('Unexpected closing brace "}".') end
+                if table.remove(paren_stack) ~= '{' then return do_error('Brace mismatch (expected "]", got "}").') end
+            elseif chr == ':' then
+                table.insert(tokens, newtoken(chr, _tok.colon))
+            elseif chr == ',' then
+                table.insert(tokens, newtoken(chr, _tok.comma))
+            elseif chr:match('%s') then
+                --Ignore white space outside of strings
+            elseif chr == '"' then
+                --Start a string token
+                in_string = true
+            elseif chr == 't' and text:sub(i, i + 3) == 'true' then
+                table.insert(tokens, newtoken(true, _tok.literal))
+                i = i + 3
+            elseif chr == 'f' and text:sub(i, i + 4) == 'false' then
+                table.insert(tokens, newtoken(false, _tok.literal))
+                i = i + 4
+            elseif chr == 'n' and text:sub(i, i + 3) == 'null' then
+                table.insert(tokens, newtoken(nil, _tok.literal))
+                i = i + 3
+            else
+                local num = text:match('^%-?%d+%.?%d*', i)
+                if num == nil then
+                    return do_error('Invalid character "' .. chr .. '".')
+                else
+                    table.insert(tokens, newtoken(tonumber(num), _tok.literal))
+                    i = i + #num - 1
+                end
+            end
 
-			col = col + 1
-			if chr == '\n' then
-				line = line + 1
-				col = 0
-				if in_string then
-					return do_error('Unexpected line ending inside string.')
-				end
-			elseif in_string then
-				if escaped then
-					if chr == 'n' then chr = '\n' end
-					if chr == 't' then chr = '\t' end
-					this_token = this_token .. chr
-					escaped = false
-				elseif chr == '\\' and text:sub(i+1,i+1) ~= 'u' then
-					--Don't mangle unicode sequences... we usually can't render those, so just leave them as-is.
-					--All others can be handled properly.
-					escaped = true
-				elseif chr == '"' then
-					--End string, append token
-					table.insert(tokens, newtoken(this_token, _tok.literal))
-					this_token = ''
-					in_string = false
-				else
-					this_token = this_token .. chr
-				end
-			elseif chr == '[' then
-				table.insert(tokens, newtoken(chr, _tok.lbracket))
-				table.insert(paren_stack, chr)
-			elseif chr == ']' then
-				table.insert(tokens, newtoken(chr, _tok.rbracket))
-				if #paren_stack == 0 then return do_error('Unexpected closing bracket "]".') end
-				if table.remove(paren_stack) ~= '[' then return do_error('Bracket mismatch (expected "}", got "]").') end
-			elseif chr == '{' then
-				table.insert(tokens, newtoken(chr, _tok.lbrace))
-				table.insert(paren_stack, chr)
-			elseif chr == '}' then
-				table.insert(tokens, newtoken(chr, _tok.rbrace))
-				if #paren_stack == 0 then return do_error('Unexpected closing brace "}".') end
-				if table.remove(paren_stack) ~= '{' then return do_error('Brace mismatch (expected "]", got "}").') end
-			elseif chr == ':' then
-				table.insert(tokens, newtoken(chr, _tok.colon))
-			elseif chr == ',' then
-				table.insert(tokens, newtoken(chr, _tok.comma))
-			elseif chr:match('%s') then
-				--Ignore white space outside of strings
-			elseif chr == '"' then
-				--Start a string token
-				in_string = true
-			elseif chr == 't' and text:sub(i, i+3) == 'true' then
-				table.insert(tokens, newtoken(true, _tok.literal))
-				i = i + 3
-			elseif chr == 'f' and text:sub(i, i+4) == 'false' then
-				table.insert(tokens, newtoken(false, _tok.literal))
-				i = i + 4
-			elseif chr == 'n' and text:sub(i, i+3) == 'null' then
-				table.insert(tokens, newtoken(nil, _tok.literal))
-				i = i + 3
-			else
-				local num = text:match('^%-?%d+%.?%d*', i)
-				if num == nil then
-					return do_error('Invalid character "'..chr..'".')
-				else
-					table.insert(tokens, newtoken(tonumber(num), _tok.literal))
-					i = i + #num - 1
-				end
-			end
+            i = i + 1 --Next char
+        end
 
-			i = i + 1 --Next char
-		end
+        if in_string then
+            col = col - #this_token
+            return do_error('Unterminated string.')
+        end
 
-		if in_string then
-			col = col - #this_token
-			return do_error('Unterminated string.')
-		end
+        if #paren_stack > 0 then
+            local last = table.remove(paren_stack)
+            if last == '[' then
+                return do_error('No terminating "]" bracket.')
+            else
+                return do_error('No terminating "}" brace.')
+            end
+        end
 
-		if #paren_stack > 0 then
-			local last = table.remove(paren_stack)
-			if last == '[' then
-				return do_error('No terminating "]" bracket.')
-			else
-				return do_error('No terminating "}" brace.')
-			end
-		end
+        local lex_error = function(token, msg)
+            line = token.line
+            col = token.col
+            local r1, r2 = do_error(msg)
+            return r1, nil, r2
+        end
 
-		local lex_error = function(token, msg)
-			line = token.line
-			col = token.col
-			local r1, r2 = do_error(msg)
-			return r1, nil, r2
-		end
+        --Now that the JSON data is confirmed to only have valid tokens, condense the tokens into valid data
+        --Note that at this point, braces are guaranteed to be in the right order and matching open/close braces.
+        local function lex(i)
+            local this_object
+            local this_token = tokens[i]
 
-		--Now that the JSON data is confirmed to only have valid tokens, condense the tokens into valid data
-		--Note that at this point, braces are guaranteed to be in the right order and matching open/close braces.
-		local function lex(i)
-			local this_object
-			local this_token = tokens[i]
+            if this_token.kind == _tok.literal then
+                return this_token.value, i
+            elseif this_token.kind == _tok.lbracket then
+                --Generate array-like tables
+                this_object = setmetatable({}, { is_array = true })
+                i = i + 1
+                this_token = tokens[i]
 
-			if this_token.kind == _tok.literal then
-				return this_token.value, i
-			elseif this_token.kind == _tok.lbracket then
-				--Generate array-like tables
-				this_object = setmetatable({}, {is_array = true})
-				i = i + 1
-				this_token = tokens[i]
+                while this_token.kind ~= _tok.rbracket do
+                    local value
+                    value, i = lex(i)
+                    table.insert(this_object, value)
+                    this_token = tokens[i + 1]
+                    if this_token.kind == _tok.comma then
+                        i = i + 1
+                    elseif this_token.kind ~= _tok.rbracket then
+                        return lex_error(this_token, 'Unexpected token "' .. this_token.value ..
+                            '" (expected "," or "]").')
+                    end
+                    i = i + 1
+                    this_token = tokens[i]
+                end
+                return this_object, i
+            elseif this_token.kind == _tok.lbrace then
+                --Generate object-like tables
+                this_object = setmetatable({}, { is_array = false })
+                i = i + 1
+                this_token = tokens[i]
 
-				while this_token.kind ~= _tok.rbracket do
-					local value
-					value, i = lex(i)
-					table.insert(this_object, value)
-					this_token = tokens[i+1]
-					if this_token.kind == _tok.comma then
-						i = i + 1
-					elseif this_token.kind ~= _tok.rbracket then
-						return lex_error(this_token, 'Unexpected token "'..this_token.value..'" (expected "," or "]").')
-					end
-					i = i + 1
-					this_token = tokens[i]
-				end
-				return this_object, i
-			elseif this_token.kind == _tok.lbrace then
-				--Generate object-like tables
-				this_object = setmetatable({}, {is_array = false})
-				i = i + 1
-				this_token = tokens[i]
+                while this_token.kind ~= _tok.rbrace do
+                    --Only exact keys are allowed‚ no objects as keys
+                    if this_token.kind ~= _tok.literal then
+                        return lex_error(this_token, 'Unexpected token "' .. this_token.value .. '" (expected literal).')
+                    end
+                    local key = this_token.value
 
-				while this_token.kind ~= _tok.rbrace do
-					--Only exact keys are allowed‚ no objects as keys
-					if this_token.kind ~= _tok.literal then
-						return lex_error(this_token, 'Unexpected token "'..this_token.value..'" (expected literal).')
-					end
-					local key = this_token.value
+                    this_token = tokens[i + 1]
+                    if this_token.kind ~= _tok.colon then
+                        return lex_error(this_token, 'Unexpected token "' .. this_token.value .. '" (expected ":").')
+                    end
 
-					this_token = tokens[i+1]
-					if this_token.kind ~= _tok.colon then
-						return lex_error(this_token, 'Unexpected token "'..this_token.value..'" (expected ":").')
-					end
+                    this_object[key], i = lex(i + 2)
+                    this_token = tokens[i + 1]
+                    if this_token.kind == _tok.comma then
+                        i = i + 1
+                    elseif this_token.kind ~= _tok.rbrace then
+                        return lex_error(this_token, 'Unexpected token "' .. this_token.value ..
+                            '" (expected "," or "}").')
+                    end
+                    i = i + 1
+                    this_token = tokens[i]
+                end
+                return this_object, i
+            else
+                return lex_error(this_token, 'Unexpected token "' .. this_token.value .. '".')
+            end
+        end
 
-					this_object[key], i = lex(i+2)
-					this_token = tokens[i+1]
-					if this_token.kind == _tok.comma then
-						i = i + 1
-					elseif this_token.kind ~= _tok.rbrace then
-						return lex_error(this_token, 'Unexpected token "'..this_token.value..'" (expected "," or "}").')
-					end
-					i = i + 1
-					this_token = tokens[i]
-				end
-				return this_object, i
-			else
-				return lex_error(this_token, 'Unexpected token "'..this_token.value..'".')
-			end
-		end
-
-		if #tokens == 0 then return nil end
-		local r1, r2, r3 = lex(1)
-		return r1, r3
-	end,
+        if #tokens == 0 then return nil end
+        local r1, r2, r3 = lex(1)
+        return r1, r3
+    end,
 
 
-	---Check if a JSON string is valid.
-	---Returns false and a descriptive error message if the text contains invalid JSON, or true if valid.
-	---@param text string The JSON string to parse.
-	---@return boolean, string|nil
-	verify = function(text)
-		local res, err = json.parse(text, true)
-		if err ~= nil then
-			return false, err
-		end
-		return true
-	end,
+    ---Check if a JSON string is valid.
+    ---Returns false and a descriptive error message if the text contains invalid JSON, or true if valid.
+    ---@param text string The JSON string to parse.
+    ---@return boolean, string|nil
+    verify = function(text)
+        local res, err = json.parse(text, true)
+        if err ~= nil then
+            return false, err
+        end
+        return true
+    end,
 }
 
 function LS()
     ---@diagnostic disable-next-line
     local path_list = V1
-    if #path_list == 0 then path_list = {WORKING_DIR} end
+    if #path_list == 0 then path_list = { WORKING_DIR } end
 
     for i = 1, #path_list do
         local fs_item = get_fs_item(path_list[i])
         if not fs_item then break end
 
         if fs_item.type ~= FS.dir then
-            file_error('`'..path_list[i]..'` is not a directory.')
+            file_error('`' .. path_list[i] .. '` is not a directory.')
             break
         end
 
@@ -1013,7 +1014,7 @@ function MKDIR()
         end
 
         if fs_item.type == FS.file then
-            file_error('`'..path_list[i]..'` is not a directory.')
+            file_error('`' .. path_list[i] .. '` is not a directory.')
             command_return(false)
             return
         end
@@ -1027,7 +1028,7 @@ function MKDIR()
         end
 
         if not create_name or fs_item.contents[create_name] then
-            file_error('`'..path_list[i]..'` already exists.')
+            file_error('`' .. path_list[i] .. '` already exists.')
             command_return(false)
             return
         end
@@ -1060,14 +1061,14 @@ function TOUCH()
         end
 
         if fs_item.type == FS.file then
-            file_error('`'..path_list[i]..'` is not a directory.')
+            file_error('`' .. path_list[i] .. '` is not a directory.')
             command_return(false)
             return
         end
 
         local create_name = get_fs_basename(path_list[i])
         if not create_name or (fs_item.contents[create_name] and fs_item.contents[create_name].type == FS.dir) then
-            file_error('`'..path_list[i]..'` already exists.')
+            file_error('`' .. path_list[i] .. '` already exists.')
             command_return(false)
             return
         end
@@ -1087,7 +1088,7 @@ function MKFILE()
     ---@diagnostic disable-next-line
     local path_list = V1
     if #path_list ~= 2 then
-        file_error('Expected exactly 2 params (filename and contents), but got '..#path_list..'.')
+        file_error('Expected exactly 2 params (filename and contents), but got ' .. #path_list .. '.')
         command_return(false)
         return
     end
@@ -1098,14 +1099,14 @@ function MKFILE()
         return
     end
     if fs_dir.type == FS.file then
-        file_error('`'..path_list[1]..'` is not a directory.')
+        file_error('`' .. path_list[1] .. '` is not a directory.')
         command_return(false)
         return
     end
 
     local create_name = get_fs_basename(path_list[1])
     if not create_name or (fs_dir.contents[create_name] and fs_dir.contents[create_name].type == FS.dir) then
-        file_error('Cannot overwrite directory `'..path_list[1]..'`.')
+        file_error('Cannot overwrite directory `' .. path_list[1] .. '`.')
         command_return(false)
         return
     end
@@ -1124,7 +1125,7 @@ function CD()
     ---@diagnostic disable-next-line
     local path_list = V1
     if #path_list ~= 1 then
-        file_error('Expected exactly 1 argument, got '..#path_list)
+        file_error('Expected exactly 1 argument, got ' .. #path_list)
         command_return(false)
         return
     end
@@ -1152,7 +1153,7 @@ function READ()
     ---@diagnostic disable-next-line
     local path_list = V1
     if #path_list ~= 1 then
-        file_error('Expected exactly 1 argument, got '..#path_list)
+        file_error('Expected exactly 1 argument, got ' .. #path_list)
         command_return(nil)
         return
     end
@@ -1172,7 +1173,7 @@ function CAT()
     ---@diagnostic disable-next-line
     local path_list = V1
     if #path_list ~= 1 then
-        file_error('Expected exactly 1 argument, got '..#path_list)
+        file_error('Expected exactly 1 argument, got ' .. #path_list)
         return
     end
 
@@ -1180,7 +1181,7 @@ function CAT()
     if not fs_item then return end
 
     if fs_item.type == FS.dir then
-        file_error('`'..path_list[1]..'` is not a file.')
+        file_error('`' .. path_list[1] .. '` is not a file.')
         return
     end
 
@@ -1195,7 +1196,7 @@ function EDIT()
     ---@diagnostic disable-next-line
     local path_list = V1
     if #path_list ~= 1 then
-        file_error('Expected exactly 1 argument, got '..#path_list)
+        file_error('Expected exactly 1 argument, got ' .. #path_list)
         command_return(false)
         return
     end
@@ -1207,7 +1208,7 @@ function EDIT()
     end
 
     if fs_item.type == FS.file then
-        file_error('`'..get_fs_full_path(fs_item)..'` is not a directory.')
+        file_error('`' .. get_fs_full_path(fs_item) .. '` is not a directory.')
         command_return(false)
         return
     end
@@ -1215,7 +1216,7 @@ function EDIT()
     local create_fs_item = get_fs_item(path_list[1], false, true)
     local create_name = get_fs_basename(path_list[1])
     if not create_name or (create_fs_item and create_fs_item.type == FS.dir) then
-        file_error('Cannot overwrite directory `'..path_list[1]..'`.')
+        file_error('Cannot overwrite directory `' .. path_list[1] .. '`.')
         command_return(false)
         return
     end
@@ -1332,7 +1333,7 @@ function RUN()
     ---@diagnostic disable-next-line
     local path_list = V1
     if #path_list == 0 then
-        file_error('Expected at least 1 argument, got '..#path_list)
+        file_error('Expected at least 1 argument, got ' .. #path_list)
         command_return(false)
         return
     end
@@ -1344,7 +1345,7 @@ function RUN()
     end
 
     if fs_item.type == FS.dir then
-        file_error('`'..path_list[1]..'` is not a file.')
+        file_error('`' .. path_list[1] .. '` is not a file.')
         command_return(false)
         return
     end
@@ -1365,14 +1366,14 @@ function RUN()
     end
 
     if interpreter ~= 'lua' and interpreter ~= 'paisley' then
-        file_error('Unknown interpreter `'..interpreter..'`. Expected "lua" or "paisley".')
+        file_error('Unknown interpreter `' .. interpreter .. '`. Expected "lua" or "paisley".')
         command_return(false)
         return
     end
 
     if interpreter == 'lua' then
         --Pass arguments to Lua script in V1
-        local args = {fs_item.contents}
+        local args = { fs_item.contents }
         for i = 2, #path_list do table.insert(args, path_list[i]) end
         run_lua_script(args)
     else
@@ -1433,7 +1434,7 @@ function CP()
 
         local dest_dir = destination.contents[fs_item.name]
         if dest_dir and dest_dir.type == FS.dir then
-            file_error('Cannot overwrite directory `'..path_list[#path_list]..'/'..fs_item.name..'`.')
+            file_error('Cannot overwrite directory `' .. path_list[#path_list] .. '/' .. fs_item.name .. '`.')
             command_return(false)
             return
         end
@@ -1520,13 +1521,14 @@ function MV()
 
         local dest_dir = destination.contents[fs_item.name]
         if dest_dir and dest_dir.type == FS.dir then
-            file_error('Cannot overwrite directory `'..path_list[#path_list]..'/'..fs_item.name..'`.')
+            file_error('Cannot overwrite directory `' .. path_list[#path_list] .. '/' .. fs_item.name .. '`.')
             command_return(false)
             return
         end
 
-        if get_fs_full_path(destination):match('^'..get_fs_full_path(fs_item)) then
-            file_error('Cannot move `'..get_fs_full_path(fs_item)..'` into its own subdirectory `'..get_fs_full_path(destination)..'`.')
+        if get_fs_full_path(destination):match('^' .. get_fs_full_path(fs_item)) then
+            file_error('Cannot move `' ..
+                get_fs_full_path(fs_item) .. '` into its own subdirectory `' .. get_fs_full_path(destination) .. '`.')
             command_return(false)
             return
         end
@@ -1547,7 +1549,7 @@ function MV()
         if fs_item then
             local dest_name = fs_item.name
             if destination_name then dest_name = destination_name end
-            
+
             if destination.type == FS.dir then
                 destination.contents[dest_name] = {
                     name = dest_name,
@@ -1609,7 +1611,7 @@ end
 function STAR()
     ---@diagnostic disable-next-line
     local path_list = V1
-    if #path_list == 0 then path_list = {""} end
+    if #path_list == 0 then path_list = { "" } end
 
     local results = {}
     for i = 1, #path_list do
@@ -1625,7 +1627,7 @@ function STAR()
 
             for name, item in pairs(fs_item.contents) do
                 local item_path = name
-                if path_list[i] ~= "" then item_path = path..'/'..name end
+                if path_list[i] ~= "" then item_path = path .. '/' .. name end
                 table.insert(results, item_path)
             end
         else
@@ -1639,7 +1641,7 @@ end
 function STARDIR()
     ---@diagnostic disable-next-line
     local path_list = V1
-    if #path_list == 0 then path_list = {WORKING_DIR} end
+    if #path_list == 0 then path_list = { WORKING_DIR } end
 
     local results = {}
     for i = 1, #path_list do
@@ -1656,7 +1658,7 @@ function STARDIR()
             for name, item in pairs(fs_item.contents) do
                 if item.type == FS.dir then
                     local item_path = name
-                    if path_list[i] ~= "" then item_path = path..'/'..name end
+                    if path_list[i] ~= "" then item_path = path .. '/' .. name end
                     table.insert(results, item_path)
                 end
             end
@@ -1669,7 +1671,7 @@ end
 function STARFILE()
     ---@diagnostic disable-next-line
     local path_list = V1
-    if #path_list == 0 then path_list = {WORKING_DIR} end
+    if #path_list == 0 then path_list = { WORKING_DIR } end
 
     local results = {}
     for i = 1, #path_list do
@@ -1686,7 +1688,7 @@ function STARFILE()
             for name, item in pairs(fs_item.contents) do
                 if item.type == FS.file then
                     local item_path = name
-                    if path_list[i] ~= "" then item_path = path..'/'..name end
+                    if path_list[i] ~= "" then item_path = path .. '/' .. name end
                     table.insert(results, item_path)
                 end
             end
@@ -1734,7 +1736,7 @@ function WGET()
     --Make sure we aren't trying to overwrite a directory
     local overwrite_fs_item = get_fs_item(output_file, false, true)
     if overwrite_fs_item and overwrite_fs_item.type == FS.dir then
-        file_error('Cannot overwrite directory `'..output_file..'`.')
+        file_error('Cannot overwrite directory `' .. output_file .. '`.')
         command_return(false)
         return
     end
@@ -1806,7 +1808,7 @@ function FSLOAD()
     local params = V1
 
     if #params < 2 then
-        file_error('Usage: '..color('`fsload [OUT_DIR] [DATA]`', 'yellow'))
+        file_error('Usage: ' .. color('`fsload [OUT_DIR] [DATA]`', 'yellow'))
         command_return(false)
         return
     end
@@ -1876,7 +1878,7 @@ function FSLOAD()
             local fs_item = fs_dir.contents[key]
 
             if fs_item.type ~= fs_item_type then
-                file_error('Unable to deserialize into `'..get_fs_full_path(fs_item)..'` due to file/dir mismatch.')
+                file_error('Unable to deserialize into `' .. get_fs_full_path(fs_item) .. '` due to file/dir mismatch.')
             elseif fs_item_type == FS.file then
                 fs_item.contents = value
             else
