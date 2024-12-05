@@ -89,7 +89,7 @@ patterns = {
     --keywords
     kwd_1 = {
         --parser auto-detects if it's at a word boundary
-        pattern = { "for", "in", "if", "elif", "while", "delete", "break", "cache", "continue", "define", "match" },
+        pattern = { "for", "in", "if", "elif", "while", "delete", "break", "cache", "continue", "define", "match", "using", "as" },
         --apply coloring from theme.keyword
         display = "keyword",
         --change scope (so commands aren't highlighted)
@@ -126,7 +126,7 @@ patterns = {
     },
 
     lbl = {
-        pattern = "[a-zA-Z0-9_]+",
+        pattern = "[^ \t\n\r\"\'{};$#]+",
         display = "special_functions",
         pop = true,
     },
