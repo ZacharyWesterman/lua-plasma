@@ -625,7 +625,7 @@ end
 
 local function run_paisley_script(script)
     ---@diagnostic disable-next-line
-    output(script, 3)
+    output_array(script, 3)
 end
 
 local function run_lua_script(script_args)
@@ -1331,6 +1331,7 @@ end
 
 function RUN()
     ---@diagnostic disable-next-line
+    ---@type table
     local path_list = V1
     if #path_list == 0 then
         file_error('Expected at least 1 argument, got ' .. #path_list)
@@ -1338,14 +1339,16 @@ function RUN()
         return
     end
 
-    local fs_item = get_fs_item(path_list[1])
+    local filename = table.remove(path_list, 1)
+
+    local fs_item = get_fs_item(filename)
     if not fs_item then
         command_return(false)
         return
     end
 
     if fs_item.type == FS.dir then
-        file_error('`' .. path_list[1] .. '` is not a file.')
+        file_error('`' .. filename .. '` is not a file.')
         command_return(false)
         return
     end
@@ -1371,14 +1374,15 @@ function RUN()
         return
     end
 
+    --Pass arguments to script
+    local args = { fs_item.contents, filename }
+    for i = 1, #path_list do table.insert(args, path_list[i]) end
+
     if interpreter == 'lua' then
-        --Pass arguments to Lua script in V1
-        local args = { fs_item.contents }
-        for i = 2, #path_list do table.insert(args, path_list[i]) end
         run_lua_script(args)
     else
         command_return(true)
-        run_paisley_script(fs_item.contents)
+        run_paisley_script(args)
     end
 end
 
