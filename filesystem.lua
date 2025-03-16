@@ -58,7 +58,7 @@ theme = {
 }
 ]])
 
-mkfs({ 'etc', 'syntax', 'paisley' }, 'files.txt', '.p$\n.pai$\n.paisley$')
+mkfs({ 'etc', 'syntax', 'paisley' }, 'files.txt', '%.p$\n%.pai$\n%.paisley$')
 mkfs({ 'etc', 'syntax', 'paisley' }, 'patterns.lua', [[
 patterns = {
     comment = {
@@ -347,7 +347,7 @@ scopes = {
 }
 ]])
 
-mkfs({ 'etc', 'syntax', 'lua' }, 'files.txt', '.lua$')
+mkfs({ 'etc', 'syntax', 'lua' }, 'files.txt', '%.lua$')
 mkfs({ 'etc', 'syntax', 'lua' }, 'patterns.lua', [[
 patterns = {
     comment = {
@@ -459,7 +459,7 @@ scopes = {
 }
 ]])
 
-mkfs({ 'etc', 'syntax', 'json' }, 'files.txt', '.json$')
+mkfs({ 'etc', 'syntax', 'json' }, 'files.txt', '%.json$')
 mkfs({ 'etc', 'syntax', 'json' }, 'patterns.lua', [[
 patterns = {
     escape_char = {
