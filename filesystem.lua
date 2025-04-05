@@ -236,6 +236,13 @@ patterns = {
         pop = true,
     },
 
+
+    --Just break up text tags
+    string_tag_break = {
+        pattern = "<",
+        display = "string",
+    },
+
     functions = {
         pattern = {"[%w_]+", "\\[^ \t\n\r\"\'{}();$#]+"},
         display = "functions",
@@ -285,6 +292,7 @@ scopes = {
     },
 
     string = {
+        "string_tag_break",
         "string_end",
         "expr_start",
         "escape_char",
@@ -292,6 +300,7 @@ scopes = {
     },
 
     string2 = {
+        "string_tag_break",
         "string2_end",
         "escape_char",
     },
@@ -610,9 +619,34 @@ scopes = {
 }
 ]])
 
-mkfs({ 'bin' })
+--Make built-in scripts
+mkfs({ 'bin' }, 'tree', [[
+#!paisley
+
+#top-level dir
+let dir = {@1 if &@ else '.'}
+print "Directory listing for `{dir}`"
+
+let stack = {("    ", i) for i in${*dir {dir}}}
+if {&stack} else
+    print "<color=grey>No subdirectories.</color>"
+    stop
+end
+
+#Iterate thru dirs, inserting all children, with indent.
+while {&stack} do
+    let indent dir = {stack[1]}
+    let stack = {stack[2::]}
+    print "<color=blue>{indent}{dir.split('/')[-1]}</color>"
+
+    #Add children back into the stack
+    let kids = {("{indent}    ", i) for i in ${*dir {dir}}}
+    let stack = {kids.merge(stack)}
+end
+]])
+
 mkfs({ 'home' }, 'README',
-    "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\nThough, you probably want to keep `/etc` as-is... it contains configuration files for syntax highlighting. <sprite=5>\n\n/bin: User scripts can be stored here.\n/etc: Config files can be stored here.\n/home: Everything else can be stored here.")
+    "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\n\n<size=80%><color=blue>/bin</color>: User scripts can be stored here, and run without the leading \"/bin/\". E.g. try running `run tree /`!\n<color=blue>/etc</color>: Config files can be stored here, including those for syntax highlighting! By default, XML, JSON, Paisley, and Lua are supported, but more can be added! They're just files <sprite=14>\n<color=blue>/home</color>: Everything else can be stored here.</size>")
 WORKING_DIR = '/home'
 
 local function color(text, text_color) return '<color=' .. text_color .. '>' .. text .. '<' .. '/color>' end
@@ -1435,10 +1469,15 @@ function RUN()
 
     local filename = table.remove(path_list, 1)
 
-    local fs_item = get_fs_item(filename)
+    local fs_item = get_fs_item(filename, false, true)
     if not fs_item then
-        command_return(false)
-        return
+        --Try in /bin
+        fs_item = get_fs_item('/bin/' .. filename)
+        if not fs_item then
+            command_return(false)
+            return
+        end
+        filename = '/bin/' .. filename
     end
 
     if fs_item.type == FS.dir then
