@@ -58,6 +58,7 @@ theme = {
 }
 ]])
 
+--Paisley syntax
 mkfs({ 'etc', 'syntax', 'paisley' }, 'files.txt', '%.p$\n%.pai$\n%.paisley$')
 mkfs({ 'etc', 'syntax', 'paisley' }, 'patterns.lua', [[
 patterns = {
@@ -347,6 +348,7 @@ scopes = {
 }
 ]])
 
+--Lua syntax
 mkfs({ 'etc', 'syntax', 'lua' }, 'files.txt', '%.lua$')
 mkfs({ 'etc', 'syntax', 'lua' }, 'patterns.lua', [[
 patterns = {
@@ -459,6 +461,7 @@ scopes = {
 }
 ]])
 
+--JSON syntax
 mkfs({ 'etc', 'syntax', 'json' }, 'files.txt', '%.json$')
 mkfs({ 'etc', 'syntax', 'json' }, 'patterns.lua', [[
 patterns = {
@@ -516,9 +519,100 @@ scopes = {
 }
 ]])
 
+--XML syntax
+mkfs({ 'etc', 'syntax', 'xml' }, 'files.txt', '%.xml$\n%.x?html?$\n%.pml$')
+mkfs({ 'etc', 'syntax', 'xml' }, 'patterns.lua', [[
+patterns = {
+    comment = {
+        pattern = {"<!%-%-.-%-%->", "<!%-%-.-$"}, --XML comments
+        display = "comment",
+    },
+
+    tag_open = {
+        pattern = "<",
+        display = "punctuation",
+        push = "in_tag",
+    },
+
+    tag_close = {
+        pattern = ">",
+        display = "punctuation",
+        pop = true,
+    },
+
+    tag_slash = {
+        pattern = "/",
+        display = "punctuation",
+    },
+
+    entity = {
+        pattern = "&%a+;",
+        display = "escape",
+    },
+
+    tag_type = {
+        pattern = "[^%s<>=/]+",
+        display = "keyword",
+        scope = "property",
+    },
+
+    property = {
+        pattern = "[^%s<>=/]+",
+        display = "functions",
+        scope = "value",
+    },
+
+    value = {
+        pattern = {"\"[^\"]*\"", "[^%s<>=/]+"},
+        display = "string",
+        scope = "property",
+    },
+
+    op_equals = {
+        pattern = "=",
+        display = "punctuation",
+    },
+}
+]])
+mkfs({ 'etc', 'syntax', 'xml' }, 'scopes.lua', [[
+--Each "scope" has a list of patterns that will be highlighted.
+scopes = {
+    --This is a special scope that is the FIRST one visible when scope stack is empty
+    --This global scope is visible IN ADDITION TO the current scope.
+    global = {
+        "comment",
+        "entity",
+    },
+
+    --This is a special scope that is set as the default when a line starts
+    initial = {
+        "tag_open",
+    },
+
+    in_tag = {
+        "tag_close",
+        "tag_slash",
+        "tag_type",
+    },
+
+    property = {
+        "tag_close",
+        "tag_slash",
+        "property",
+    },
+
+    value = {
+        "op_equals",
+        "tag_close",
+        "tag_slash",
+        "value",
+    },
+}
+]])
+
 mkfs({ 'bin' })
 mkfs({ 'home' }, 'README',
-    "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\n\n/bin: User scripts can be stored here.\n/etc: Config files can be stored here.\n/home: Everything else can be stored here.")
+    "This filesystem has been pre-loaded with an example directory structure. Feel free to rearrange it to your heart's content!\nThough, you probably want to keep `/etc` as-is... it contains configuration files for syntax highlighting. <sprite=5>\n\n/bin: User scripts can be stored here.\n/etc: Config files can be stored here.\n/home: Everything else can be stored here.")
 WORKING_DIR = '/home'
 
 local function color(text, text_color) return '<color=' .. text_color .. '>' .. text .. '<' .. '/color>' end
